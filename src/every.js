@@ -19,53 +19,70 @@ import { parseDuration } from './parseDuration.js';
 *   readonly count: number
 * }}
 */
-export function every(duration, fn, max = Infinity) {
-    const ms = parseDuration(duration); // assumed robust
-    let intervalId = null;
-    let active = false;
+export function every(duration, fn, max = Infinity, runImmediately = false) {
+    const ms = parseDuration(duration);
+    let timer = null;
+    let startTime = null;
+    let remaining = ms;
+    let running = false;
     let count = 0;
 
-    const run = () => {
+    const tick = () => {
         if (count >= max) {
             cancel();
-        } else {
-            fn(); 
-            count++;
+            return;
         }
+        fn();
+        count++
+        scheduleNext(); // keep going
     };
 
-    const start = () => {
-        if (!active && count < max) {
-            intervalId = setInterval(run, ms);
-            active = true;
-        }
+    const scheduleNext = () => {
+        startTime = Date.now();
+        timer = setTimeout(tick, ms);
+        remaining = ms;
+        running = true;
     };
 
     const pause = () => {
-        if (active) {
-            cancel();
+        if (running) {
+            clearTimeout(timer);
+            remaining -= Date.now() - startTime;
+            running = false;
         }
     };
 
     const resume = () => {
-        start();
+        if (!running && count < max) {
+            startTime = Date.now();
+            timer = setTimeout(tick, remaining);
+            running = true;
+        }
     };
 
     const cancel = () => {
-        if (intervalId !== null) {
-            clearInterval(intervalId);
-            intervalId = null;
-        }
-        active = false;
+        clearTimeout(timer);
+        timer = null;
+        running = false;
     };
 
     const reset = (restart = false) => {
         cancel();
         count = 0;
+        remaining = ms;
         if (restart) start();
     };
 
-    // Start the timer "every" N milliseconds.
+    const start = () => {
+        if (runImmediately) {
+            tick();
+        } else {
+            scheduleNext();
+        }
+    };
+
+
+    // Initial launch
     start();
 
     return {
@@ -73,7 +90,7 @@ export function every(duration, fn, max = Infinity) {
         resume,
         cancel,
         reset,
-        get isRunning() { return active; },
-        get count() { return count; },
+        get isRunning() { return running; },
+        get count() { return count; }
     };
 }
