@@ -10,7 +10,7 @@ export function chrono() {
     let currentIndex = 0;
     let cancelled = false;
     let paused = false;
-    let resumeFn = null;
+    let shouldLoop = false;
   
     const runner = {
       after(duration, fn) {
@@ -28,14 +28,15 @@ export function chrono() {
         runNext();
         return runner;
       },
+      loop(enable = true) {
+        shouldLoop = enable;
+        return runner;
+      },
       pause() {
         if (paused || cancelled) return;
         paused = true;
-  
         const current = steps[currentIndex];
-        if (current?.controller?.pause) {
-          current.controller.pause();
-        }
+        current?.controller?.pause?.();
         if (current.type === 'after' && current.startedAt) {
           current.remaining = current.delay - (Date.now() - current.startedAt);
           current.controller.cancel();
@@ -44,7 +45,6 @@ export function chrono() {
       resume() {
         if (!paused || cancelled) return;
         paused = false;
-  
         const current = steps[currentIndex];
         if (current.type === 'after') {
           current.startedAt = Date.now();
@@ -52,14 +52,13 @@ export function chrono() {
             currentIndex++;
             runNext();
           });
-        } else if (current?.controller?.resume) {
-          current.controller.resume();
+        } else {
+          current?.controller?.resume?.();
         }
       },
       cancel() {
         cancelled = true;
-        const current = steps[currentIndex];
-        current?.controller?.cancel?.();
+        steps[currentIndex]?.controller?.cancel?.();
       },
       get isPaused() {
         return paused;
@@ -67,9 +66,15 @@ export function chrono() {
     };
   
     function runNext() {
-      if (cancelled || paused || currentIndex >= steps.length) return;
-      const step = steps[currentIndex];
+      if (cancelled || paused || currentIndex >= steps.length) {
+        if (shouldLoop && !cancelled) {
+          currentIndex = 0;
+          runNext();
+        }
+        return;
+      }
   
+      const step = steps[currentIndex];
       if (step.type === 'after') {
         step.delay = parseDuration(step.duration);
         step.startedAt = Date.now();
@@ -96,3 +101,4 @@ export function chrono() {
   
     return runner;
   }
+  
