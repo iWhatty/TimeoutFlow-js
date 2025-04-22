@@ -10,11 +10,41 @@ import { parseDuration } from './parseDuration.js';
  */
 export function after(duration, fn) {
     const ms = parseDuration(duration);
-    const id = setTimeout(fn, ms);
+    let timer = null;
+    let startTime = Date.now();
+    let remaining = ms;
+    let running = true;
+  
+    const schedule = () => {
+      timer = setTimeout(() => {
+        running = false;
+        fn();
+      }, remaining);
+    };
+  
+    schedule();
+  
     return {
-      pause() {},
-      resume() {},
-      cancel: () => clearTimeout(id),
-      isRunning: false
+      pause() {
+        if (running) {
+          clearTimeout(timer);
+          remaining -= Date.now() - startTime;
+          running = false;
+        }
+      },
+      resume() {
+        if (!running && remaining > 0) {
+          startTime = Date.now();
+          running = true;
+          schedule();
+        }
+      },
+      cancel() {
+        clearTimeout(timer);
+        running = false;
+      },
+      get isRunning() {
+        return running;
+      }
     };
   }
