@@ -1,13 +1,42 @@
-import { after, every, chrono } from 'TimeoutFlow';
 
-after('5s', () => console.log('5 seconds later...'));
 
-const ticker = every('1s', () => console.log('tick'));
-ticker.pause();
-setTimeout(() => ticker.resume(), 2000);
 
-// Or schedule a sequence
-chrono()
-  .after('2s', () => console.log('ready'))
-  .every('1s', () => console.log('looping'), 5)
-  .after('500ms', () => console.log('done'));
+const timeMultipliers = {
+    ms: 1,
+    s: 1000,
+    m: 60_000,
+    h: 3_600_000
+  };
+  
+  /**
+   * Parses a duration string like "2s", "1.5m", "500ms" into milliseconds.
+   * @param {string} input
+   * @returns {number}
+   */
+  export function parseDuration(input) {
+    const match = /^(\d+(?:\.\d+)?)(ms|s|m|h)$/i.exec(input.trim());
+    if (!match) {
+      throw new Error(`Invalid duration format: "${input}"`);
+    }
+    const [, value, unit] = match;
+    return parseFloat(value) * timeMultipliers[unit.toLowerCase()];
+  }
+  
+
+
+/**
+ * Schedules a one-time delayed function.
+ * @param {string} duration - e.g. "5s", "500ms", "2m"
+ * @param {Function} fn - callback to run
+ * @returns {{ cancel(): void }}
+ */
+export function after(duration, fn) {
+    const ms = parseDuration(duration);
+    const id = setTimeout(fn, ms);
+    return {
+      cancel() {
+        clearTimeout(id);
+      }
+    };
+  }
+  
