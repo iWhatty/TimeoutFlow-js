@@ -182,8 +182,6 @@ export function flow() {
 
 
         if (step.type === 'after') {
-            step.startedAt = Date.now();
-            step.delay = parseDuration(step.duration);
             step.controller = after(step.duration, step.fn, () => increment_step(step));
             return
         }

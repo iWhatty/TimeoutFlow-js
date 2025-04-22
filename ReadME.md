@@ -6,6 +6,40 @@ TimeoutFlow makes working with time-based logic intuitive — think of it as a m
 
 ---
 
+## 🧠 Philosophy
+
+**TimeoutFlow is not just a wrapper for `setTimeout`.**  
+It's a composable mini-framework for expressing time as fluent logic.
+
+We believe temporal behavior in JavaScript should be:
+
+- ✅ **Readable** – durations like `"1s"` and `"500ms"` are easier to reason about than magic numbers.
+- ✅ **Composable** – sequencing events should be declarative, not a tangle of nested callbacks or timers.
+- ✅ **Controllable** – any timer should be pauseable, resumable, and cancelable at any moment.
+- ✅ **Branchable** – real flows require `if`, `while`, `label`, and `jumpTo()` — not just repetition.
+- ✅ **Tiny** – no dependencies, no bloat, and no reactivity engine required.
+
+TimeoutFlow gives you **atomic time primitives** (`after`, `every`, `debounce`, `retry`)  
+and a fluent builder (`flow()`) to script rich behavior over time — like a timeline you can control.
+
+### 📌 In Other Words:
+
+> Think of TimeoutFlow as **setTimeout() with superpowers.**  
+> But more importantly, think of it as a way to **write time** like you write logic.
+
+```js
+flow()
+  .after('1s', () => console.log('Start'))
+  .every('500ms', (i) => console.log(`Tick ${i}`), 3)
+  .after('1s', () => console.log('Done'))
+  .start();
+```
+
+This isn’t about wrapping timers.  
+It’s about **orchestrating intent** — clearly, fluently, and with full control.
+
+---
+
 ## 🚀 Installation
 
 ```bash
