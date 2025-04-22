@@ -12,9 +12,9 @@ export function after(duration, fn) {
     const ms = parseDuration(duration);
     const id = setTimeout(fn, ms);
     return {
-      cancel() {
-        clearTimeout(id);
-      }
+      pause() {},
+      resume() {},
+      cancel: () => clearTimeout(id),
+      isRunning: false
     };
   }
-  

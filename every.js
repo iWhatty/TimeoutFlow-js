@@ -12,56 +12,50 @@ import { parseDuration } from './parseDuration.js';
  * @param {number} [maxTimes] - optional number of times to run
  * @returns {{ pause(): void, resume(): void, cancel(): void, isRunning: boolean }}
  */
-export function every(duration, fn, maxTimes = Infinity) {
+export function every(duration, fn, max = Infinity) {
     const ms = parseDuration(duration);
     let intervalId = null;
+    let active = false;
     let count = 0;
-    let running = false;
-  
+
     const run = () => {
-      if (count >= maxTimes) {
-        clearInterval(intervalId);
-        running = false;
-        return;
-      }
-      fn(count);
-      count++;
+        if (count >= max) {
+            clearInterval(intervalId);
+            active = false;
+        } else {
+            fn(count++);
+        }
     };
-  
+
+
     const start = () => {
-      if (!running) {
-        intervalId = setInterval(run, ms);
-        running = true;
-      }
+        if (!active && count < max) {
+            intervalId = setInterval(run, ms);
+            active = true;
+        }
     };
-  
+
     start();
-  
+
+
     return {
-  
-      pause() {
-        if (running) {
-          clearInterval(intervalId);
-          running = false;
+        pause() {
+            if (active) {
+                clearInterval(intervalId);
+                active = false;
+            }
+        },
+        resume() {
+
+            start();
+
+        },
+        cancel() {
+            clearInterval(intervalId);
+            active = false;
+        },
+        get isRunning() {
+            return active;
         }
-      },
-  
-      resume() {
-        if (!running && count < maxTimes) {
-          start();
-        }
-      },
-  
-      cancel() {
-        clearInterval(intervalId);
-        count = maxTimes; // force end
-        running = false;
-      },
-  
-      get isRunning() {
-        return running;
-      }
-  
     };
-  }
-  
+}
