@@ -168,7 +168,9 @@ export function chrono() {
         }
 
         // End of timeline
-        if (currentIndex >= steps.length) {
+        const step = steps[currentIndex];
+
+        if (!step || currentIndex >= steps.length) {
             if (loopEnabled && ++loopCount < loopLimit) {
                 currentIndex = 0;
                 executeNext();
@@ -178,7 +180,6 @@ export function chrono() {
             return;
         }
 
-        const step = steps[currentIndex];
 
         if (step.type === 'after') {
             step.delay = parseDuration(step.duration);
@@ -226,6 +227,11 @@ export function chrono() {
             }, step.times);
 
             step.controller = ctrl;
+        }
+
+        if (step.type === 'label') {
+            currentIndex++;
+            executeNext();
         }
 
 
