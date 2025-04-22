@@ -1,6 +1,0 @@
-tempus/
-├── index.js
-├── parseDuration.js
-├── after.js
-├── every.js
-└── chrono.js
