@@ -78,24 +78,29 @@ export function every(duration, fn, maxTimes = Infinity) {
   start();
 
   return {
+
     pause() {
       if (running) {
         clearInterval(intervalId);
         running = false;
       }
     },
+
     resume() {
       if (!running && count < maxTimes) {
         start();
       }
     },
+
     cancel() {
       clearInterval(intervalId);
       count = maxTimes; // force end
       running = false;
     },
+
     get isRunning() {
       return running;
     }
+    
   };
 }

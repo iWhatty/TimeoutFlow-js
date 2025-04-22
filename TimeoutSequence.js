@@ -43,26 +43,26 @@ export function chrono() {
         pause() {
             if (paused || cancelled) return;
             paused = true;
-            const current = steps[currentIndex];
-            current?.controller?.pause?.();
-            if (current.type === 'after' && current.startedAt) {
-                current.remaining = current.delay - (Date.now() - current.startedAt);
-                current.controller.cancel();
+            const current_step = steps[currentIndex];
+            current_step?.controller?.pause?.();
+            if (current_step.type === 'after' && current_step.startedAt) {
+                current_step.remaining = current_step.delay - (Date.now() - current_step.startedAt);
+                current_step.controller.cancel();
             }
         },
 
         resume() {
             if (!paused || cancelled) return;
             paused = false;
-            const current = steps[currentIndex];
-            if (current.type === 'after') {
-                current.startedAt = Date.now();
-                current.controller = after(current.remaining + 'ms', () => {
+            const current_step = steps[currentIndex];
+            if (current_step.type === 'after') {
+                current_step.startedAt = Date.now();
+                current_step.controller = after(current_step.remaining + 'ms', () => {
                     currentIndex++;
                     runNext();
                 });
             } else {
-                current?.controller?.resume?.();
+                current_step?.controller?.resume?.();
             }
         },
         
@@ -70,7 +70,7 @@ export function chrono() {
             cancelled = true;
             steps[currentIndex]?.controller?.cancel?.();
         },
-        
+
         get isPaused() {
             return paused;
         }
