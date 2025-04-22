@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TimeoutFlow Test</title>
+</head>
+<body>
+  <h1>TimeoutFlow Testing</h1>
+  <input id="search" placeholder="Type to debounce...">
+  <script type="module">
+    import { after, every, debounce, flow } from '../dist/timeout-flow.min.js';
+
+    // Example 1: after
+    after('1s', () => console.log('[test] Hello after 1s'));
+
+    // Example 2: every + pause/resume
+    const ticker = every('1s', i => console.log(`[test] Tick ${i}`), 5);
+    after('2s', () => ticker.pause());
+    after('4s', () => ticker.resume());
+
+    // Example 3: debounce
+    const logSearch = debounce('300ms', e => console.log('[test] Search:', e.target.value));
+    document.getElementById('search').addEventListener('input', logSearch);
+
+    // Example 4: flow timeline
+    flow()
+      .after('1s', () => console.log('[flow] Step 1'))
+      .every('500ms', i => console.log(`[flow] Tick ${i}`), 3)
+      .after('1s', () => console.log('[flow] Done'))
+      .start();
+  </script>
+</body>
+</html>
