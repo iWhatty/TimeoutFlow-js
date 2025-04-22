@@ -38,8 +38,8 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
     };
 
     const scheduleNext = () => {
-        startTime = Date.now();
         timer = setTimeout(tick, ms);
+        startTime = Date.now();
         remaining = ms;
         running = true;
     };
@@ -53,7 +53,7 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
     };
 
     const resume = () => {
-        if (!running && count < max) {
+        if (!running && count < max && remaining > 0) {
             startTime = Date.now();
             timer = setTimeout(tick, remaining);
             running = true;
