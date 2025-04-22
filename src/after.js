@@ -8,7 +8,7 @@ import { parseDuration } from './parseDuration.js';
  * @param {Function} fn - callback to run
  * @returns {{ cancel(): void }}
  */
-export function after(duration, fn) {
+export function after(duration, fn, onFinish) {
     const ms = parseDuration(duration);
     let timer = null;
     let startTime = Date.now();
@@ -18,7 +18,8 @@ export function after(duration, fn) {
     const schedule = () => {
       timer = setTimeout(() => {
         running = false;
-        fn();
+        fn?.(); // Main Func to exec after delay.
+        onFinish?.(); // Callback after running if passed.
       }, remaining);
     };
   

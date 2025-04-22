@@ -16,15 +16,12 @@
         after('1s', () => console.log('[test] Hello after 1s'));
 
         // Example 2: every + pause/resume
-        let i = 0;
-
+        let i = 1;
         function log_ticks() {
             console.log(`[test] Tick ${i++}`)
         }
-
         const ticker = every('1s', log_ticks, 5);
-        after('2s', () => ticker.pause());
-        after('4s', () => ticker.resume());
+
 
         // Example 3: debounce
         const logSearch = debounce('300ms', e => console.log('[test] Search:', e.target.value));

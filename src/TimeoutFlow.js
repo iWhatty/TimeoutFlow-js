@@ -1,5 +1,5 @@
 
-
+// ./src/TimeoutFlow.js
 
 import { parseDuration } from './parseDuration.js';
 import { after } from './after.js';
@@ -26,10 +26,12 @@ export function flow() {
     let doWhileCondition = null;
 
     const runner = {
+
         after(duration, fn) {
             steps.push({ type: 'after', duration, fn });
             return runner;
         },
+
         every(duration, fn, times = Infinity) {
             steps.push({
                 type: 'every',
@@ -43,15 +45,18 @@ export function flow() {
             doWhileCondition = null;
             return runner;
         },
+
         loop(n = true) {
             loopEnabled = true;
             loopLimit = n === true ? Infinity : n;
             return runner;
         },
+
         onFinish(cb) {
             onFinishCallback = cb;
             return runner;
         },
+
         start() {
             isCancelled = false;
             isPaused = false;
@@ -60,36 +65,26 @@ export function flow() {
             executeNext();
             return runner;
         },
+
         pause() {
             if (isPaused || isCancelled) return;
             isPaused = true;
-            const step = steps[currentIndex];
-            step?.controller?.pause?.();
-            if (step.type === 'after' && step.startedAt) {
-                step.remaining = step.delay - (Date.now() - step.startedAt);
-                step.controller?.cancel?.();
-            }
+            steps[currentIndex]?.controller?.pause?.();
         },
+
         resume() {
             if (!isPaused || isCancelled) return;
             isPaused = false;
-            const step = steps[currentIndex];
-            if (step.type === 'after') {
-                step.startedAt = Date.now();
-                step.controller = after(step.remaining + 'ms', () => {
-                    currentIndex++;
-                    executeNext();
-                });
-            } else {
-                step?.controller?.resume?.();
-            }
+            steps[currentIndex]?.controller?.resume?.();
         },
+
         cancel() {
             isCancelled = true;
             const step = steps[currentIndex];
             step?.controller?.cancel?.();
             step.controller = null;
         },
+
         reset() {
             runner.cancel();
             steps.length = 0;
@@ -135,6 +130,12 @@ export function flow() {
 
     };
 
+    function increment_step(step = null) {
+        if (step?.controller) step.controller = null;
+        currentIndex++;
+        executeNext();
+    }
+
     function executeNext() {
         if (isCancelled || isPaused) return;
 
@@ -162,8 +163,7 @@ export function flow() {
             if (!next || next.type === 'label') {
                 skipMode = false; // stop skipping at label
             } else {
-                currentIndex++;
-                return executeNext();
+                return increment_step(step);
             }
         }
 
@@ -182,13 +182,10 @@ export function flow() {
 
 
         if (step.type === 'after') {
-            step.delay = parseDuration(step.duration);
             step.startedAt = Date.now();
-            step.controller = after(step.duration, () => {
-                step.controller = null;
-                currentIndex++;
-                executeNext();
-            });
+            step.delay = parseDuration(step.duration);
+            step.controller = after(step.duration, step.fn, () => increment_step(step));
+            return
         }
 
         if (step.type === 'every') {
@@ -201,9 +198,7 @@ export function flow() {
                 // Handle .while (skip when fails before run)
                 if (step.whileCondition && !step.whileCondition()) {
                     ctrl.cancel();
-                    step.controller = null;
-                    currentIndex++;
-                    return executeNext();
+                    return increment_step(step);
                 }
 
                 // Run fn first
@@ -213,16 +208,12 @@ export function flow() {
                 // Check doWhile after first execution
                 if (!firstRun && step.doWhileCondition && !step.doWhileCondition()) {
                     ctrl.cancel();
-                    step.controller = null;
-                    currentIndex++;
-                    return executeNext();
+                    return increment_step(step);
                 }
 
                 if (count >= step.times) {
                     ctrl.cancel();
-                    step.controller = null;
-                    currentIndex++;
-                    executeNext();
+                    return increment_step(step);
                 }
             }, step.times);
 
@@ -230,8 +221,7 @@ export function flow() {
         }
 
         if (step.type === 'label') {
-            currentIndex++;
-            executeNext();
+            return increment_step(step);
         }
 
 
