@@ -9,7 +9,7 @@ import { every } from './every.js';
  * Creates a fluent scheduler.
  * Returns a chainable timeline.
  */
-export function chrono() {
+export function flow() {
     const steps = [];
     let currentIndex = 0;
     let isPaused = false;

@@ -1,6 +1,6 @@
 export { parseDuration } from './parseDuration.js';
 
-export { chrono } from './TimeoutFlow.js';
+export { flow } from './TimeoutFlow.js';
 
 export { throttle } from './throttle.js';
 export { debounce } from './debounce.js';
