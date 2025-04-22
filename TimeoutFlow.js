@@ -20,6 +20,10 @@ export function chrono() {
     let onFinishCallback = null;
     const labelMap = new Map();
     let jumpTarget = null;
+    let conditionStack = [];
+    let skipMode = false;
+    let whileCondition = null;
+    let doWhileCondition = null;
 
     const runner = {
         after(duration, fn) {
@@ -27,7 +31,16 @@ export function chrono() {
             return runner;
         },
         every(duration, fn, times = Infinity) {
-            steps.push({ type: 'every', duration, fn, times });
+            steps.push({
+                type: 'every',
+                duration,
+                fn,
+                times,
+                whileCondition,
+                doWhileCondition
+            });
+            whileCondition = null;
+            doWhileCondition = null;
             return runner;
         },
         loop(n = true) {
@@ -98,13 +111,33 @@ export function chrono() {
         jumpTo(name) {
             jumpTarget = name;
             return runner;
+        },
+
+        if(predicate) {
+            conditionStack.push(() => (typeof predicate === 'function' ? predicate() : !!predicate));
+            return runner;
+        },
+
+        unless(predicate) {
+            conditionStack.push(() => !(typeof predicate === 'function' ? predicate() : !!predicate));
+            return runner;
+        },
+
+        while(predicate) {
+            whileCondition = () => (typeof predicate === 'function' ? predicate() : !!predicate);
+            return runner;
+        },
+
+        doWhile(predicate) {
+            doWhileCondition = () => (typeof predicate === 'function' ? predicate() : !!predicate);
+            return runner;
         }
 
     };
 
     function executeNext() {
         if (isCancelled || isPaused) return;
-        
+
         if (jumpTarget) {
             const targetIndex = labelMap.get(jumpTarget);
             if (typeof targetIndex === 'number') {
@@ -113,6 +146,25 @@ export function chrono() {
                 throw new Error(`Label "${jumpTarget}" not found`);
             }
             jumpTarget = null; // reset after jump
+        }
+
+        // Handle if conditions
+        if (conditionStack.length > 0) {
+            const shouldRun = conditionStack.shift()(); // run & remove
+            if (!shouldRun) {
+                skipMode = true;
+            }
+        }
+
+        // Skip logic
+        if (skipMode) {
+            const next = steps[currentIndex];
+            if (!next || next.type === 'label') {
+                skipMode = false; // stop skipping at label
+            } else {
+                currentIndex++;
+                return executeNext();
+            }
         }
 
         // End of timeline
@@ -140,19 +192,43 @@ export function chrono() {
 
         if (step.type === 'every') {
             let count = 0;
+            let firstRun = true;
+
             const ctrl = every(step.duration, () => {
-                if (!isPaused && !isCancelled) {
-                    step.fn(count++);
-                    if (count >= step.times) {
-                        ctrl.cancel();
-                        step.controller = null;
-                        currentIndex++;
-                        executeNext();
-                    }
+                if (isPaused || isCancelled) return;
+
+                // Handle .while (skip when fails before run)
+                if (step.whileCondition && !step.whileCondition()) {
+                    ctrl.cancel();
+                    step.controller = null;
+                    currentIndex++;
+                    return executeNext();
+                }
+
+                // Run fn first
+                step.fn(count++);
+                firstRun = false;
+
+                // Check doWhile after first execution
+                if (!firstRun && step.doWhileCondition && !step.doWhileCondition()) {
+                    ctrl.cancel();
+                    step.controller = null;
+                    currentIndex++;
+                    return executeNext();
+                }
+
+                if (count >= step.times) {
+                    ctrl.cancel();
+                    step.controller = null;
+                    currentIndex++;
+                    executeNext();
                 }
             }, step.times);
+
             step.controller = ctrl;
         }
+
+
     }
 
     return runner;
