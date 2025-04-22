@@ -1,106 +1,124 @@
 
 
 
-const timeMultipliers = {
-    ms: 1,
-    s: 1000,
-    m: 60_000,
-    h: 3_600_000
-  };
-  
-  /**
-   * Parses a duration string like "2s", "1.5m", "500ms" into milliseconds.
-   * @param {string} input
-   * @returns {number}
-   */
-  export function parseDuration(input) {
-    const match = /^(\d+(?:\.\d+)?)(ms|s|m|h)$/i.exec(input.trim());
-    if (!match) {
-      throw new Error(`Invalid duration format: "${input}"`);
-    }
-    const [, value, unit] = match;
-    return parseFloat(value) * timeMultipliers[unit.toLowerCase()];
-  }
-  
 
+
+
+
+
+import { parseDuration } from './parseDuration.js';
+import { after } from './after.js';
+import { every } from './every.js';
 
 /**
- * Schedules a one-time delayed function.
- * @param {string} duration - e.g. "5s", "500ms", "2m"
- * @param {Function} fn - callback to run
- * @returns {{ cancel(): void }}
+ * Creates a fluent scheduler.
+ * Returns a chainable timeline.
  */
-export function after(duration, fn) {
-    const ms = parseDuration(duration);
-    const id = setTimeout(fn, ms);
-    return {
-      cancel() {
-        clearTimeout(id);
-      }
+export function chrono() {
+    const steps = [];
+    let currentIndex = 0;
+    let cancelled = false;
+    let paused = false;
+    let shouldLoop = false;
+    let loopCountMax = Infinity;
+    let loopCountCurrent = 0;
+
+    const runner = {
+
+        after(duration, fn) {
+            steps.push({ type: 'after', duration, fn });
+            return runner;
+        },
+
+        every(duration, fn, times = Infinity) {
+            steps.push({ type: 'every', duration, fn, times });
+            return runner;
+        },
+
+        start() {
+            currentIndex = 0;
+            cancelled = false;
+            paused = false;
+            runNext();
+            return runner;
+        },
+
+        loop(count = true) {
+            shouldLoop = true;
+            loopCountMax = count === true ? Infinity : count;
+            return runner;
+        },
+
+        pause() {
+            if (paused || cancelled) return;
+            paused = true;
+            const current_step = steps[currentIndex];
+            current_step?.controller?.pause?.();
+            if (current_step.type === 'after' && current_step.startedAt) {
+                current_step.remaining = current_step.delay - (Date.now() - current_step.startedAt);
+                current_step.controller.cancel();
+            }
+        },
+
+        resume() {
+            if (!paused || cancelled) return;
+            paused = false;
+            const current_step = steps[currentIndex];
+            if (current_step.type === 'after') {
+                current_step.startedAt = Date.now();
+                current_step.controller = after(current_step.remaining + 'ms', () => {
+                    currentIndex++;
+                    runNext();
+                });
+            } else {
+                current_step?.controller?.resume?.();
+            }
+        },
+        
+        cancel() {
+            cancelled = true;
+            steps[currentIndex]?.controller?.cancel?.();
+        },
+
+        get isPaused() {
+            return paused;
+        }
     };
-  }
-  
 
-  import { parseDuration } from './tempus.js';
+    function runNext() {
+        if (cancelled || paused || currentIndex >= steps.length) {
+            if (shouldLoop && !cancelled && loopCountCurrent < loopCountMax) {
+                loopCountCurrent++;
+                currentIndex = 0;
+                runNext();
+            }
+            return;
+        }
 
-/**
- * Runs a function every N milliseconds with optional execution limit.
- * Returns control methods: pause, resume, cancel.
- * 
- * @param {string} duration - e.g. "1s", "500ms", "2m"
- * @param {Function} fn - function to execute
- * @param {number} [maxTimes] - optional number of times to run
- * @returns {{ pause(): void, resume(): void, cancel(): void, isRunning: boolean }}
- */
-export function every(duration, fn, maxTimes = Infinity) {
-  const ms = parseDuration(duration);
-  let intervalId = null;
-  let count = 0;
-  let running = false;
+        const step = steps[currentIndex];
+        if (step.type === 'after') {
+            step.delay = parseDuration(step.duration);
+            step.startedAt = Date.now();
+            step.controller = after(step.duration, () => {
+                currentIndex++;
+                runNext();
+            });
+        }
 
-  const run = () => {
-    if (count >= maxTimes) {
-      clearInterval(intervalId);
-      running = false;
-      return;
+        if (step.type === 'every') {
+            let count = 0;
+            const ctrl = every(step.duration, () => {
+                if (paused || cancelled) return;
+                step.fn(count++);
+                if (count >= step.times) {
+                    ctrl.cancel();
+                    currentIndex++;
+                    runNext();
+                }
+            }, step.times);
+            step.controller = ctrl;
+        }
     }
-    fn(count);
-    count++;
-  };
 
-  const start = () => {
-    if (!running) {
-      intervalId = setInterval(run, ms);
-      running = true;
-    }
-  };
-
-  start();
-
-  return {
-
-    pause() {
-      if (running) {
-        clearInterval(intervalId);
-        running = false;
-      }
-    },
-
-    resume() {
-      if (!running && count < maxTimes) {
-        start();
-      }
-    },
-
-    cancel() {
-      clearInterval(intervalId);
-      count = maxTimes; // force end
-      running = false;
-    },
-
-    get isRunning() {
-      return running;
-    }
-    
-  };
+    return runner;
 }
