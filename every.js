@@ -29,7 +29,8 @@ export function every(duration, fn, max = Infinity) {
         if (count >= max) {
             cancel();
         } else {
-            fn(count++);
+            fn(); 
+            count++;
         }
     };
 
@@ -64,7 +65,7 @@ export function every(duration, fn, max = Infinity) {
         if (restart) start();
     };
 
-    // kick off on creation
+    // Start the timer "every" N milliseconds.
     start();
 
     return {
