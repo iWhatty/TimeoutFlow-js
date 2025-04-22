@@ -21,10 +21,11 @@ import { parseDuration } from './parseDuration.js';
 */
 export function every(duration, fn, max = Infinity, runImmediately = false) {
     const ms = parseDuration(duration);
-    let timer = null;
     let startTime = null;
     let remaining = ms;
     let running = false;
+    let timer = null;
+
     let count = 0;
 
     const tick = () => {
@@ -32,7 +33,7 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
             cancel();
             return;
         }
-        fn();
+        fn?.(); // Main Func to exec after delay.
         count++
         scheduleNext(); // keep going
     };
@@ -54,16 +55,16 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
 
     const resume = () => {
         if (!running && count < max && remaining > 0) {
-            startTime = Date.now();
             timer = setTimeout(tick, remaining);
+            startTime = Date.now();
             running = true;
         }
     };
 
     const cancel = () => {
         clearTimeout(timer);
-        timer = null;
         running = false;
+        timer = null;
     };
 
     const reset = (restart = false) => {
@@ -93,4 +94,5 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
         get isRunning() { return running; },
         get count() { return count; }
     };
+    
 }

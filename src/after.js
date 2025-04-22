@@ -16,6 +16,7 @@ export function after(duration, fn, onFinish) {
   let timer = null;
 
   const schedule = () => {
+    startTime = Date.now();
     timer = setTimeout(() => {
       running = false;
       fn?.(); // Main Func to exec after delay.
@@ -23,29 +24,37 @@ export function after(duration, fn, onFinish) {
     }, remaining);
   };
 
+
+  const pause = () => {
+    if (running) {
+      clearTimeout(timer);
+      remaining -= Date.now() - startTime;
+      running = false;
+    }
+  };
+
+  const resume = () => {
+    if (!running && remaining > 0) {
+      startTime = Date.now();
+      running = true;
+      schedule();
+    }
+  };
+
+  const cancel = () => {
+    clearTimeout(timer);
+    running = false;
+    timer = null;
+  };
+
+  // Scedule Timer for execution. 
   schedule();
 
   return {
-    pause() {
-      if (running) {
-        clearTimeout(timer);
-        remaining -= Date.now() - startTime;
-        running = false;
-      }
-    },
-    resume() {
-      if (!running && remaining > 0) {
-        startTime = Date.now();
-        running = true;
-        schedule();
-      }
-    },
-    cancel() {
-      clearTimeout(timer);
-      running = false;
-    },
-    get isRunning() {
-      return running;
-    }
+    pause,
+    resume,
+    cancel,
+    get isRunning() { return running; }
   };
+
 }
