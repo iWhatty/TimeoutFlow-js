@@ -17,6 +17,7 @@ export function chrono() {
     let loopEnabled = false;
     let loopLimit = Infinity;
     let loopCount = 0;
+    let onFinishCallback = null;
   
     const runner = {
       after(duration, fn) {
@@ -32,43 +33,55 @@ export function chrono() {
         loopLimit = n === true ? Infinity : n;
         return runner;
       },
+      onFinish(cb) {
+        onFinishCallback = cb;
+        return runner;
+      },
       start() {
         isCancelled = false;
         isPaused = false;
-        loopCount = 0;
         currentIndex = 0;
+        loopCount = 0;
         executeNext();
         return runner;
       },
       pause() {
-        if (!isPaused) {
-          isPaused = true;
-          steps[currentIndex]?.controller?.pause?.();
-          const step = steps[currentIndex];
-          if (step.type === 'after' && step.startedAt) {
-            step.remaining = step.delay - (Date.now() - step.startedAt);
-            step.controller?.cancel?.();
-          }
+        if (isPaused || isCancelled) return;
+        isPaused = true;
+        const step = steps[currentIndex];
+        step?.controller?.pause?.();
+        if (step.type === 'after' && step.startedAt) {
+          step.remaining = step.delay - (Date.now() - step.startedAt);
+          step.controller?.cancel?.();
         }
       },
       resume() {
-        if (isPaused && !isCancelled) {
-          isPaused = false;
-          const step = steps[currentIndex];
-          if (step.type === 'after') {
-            step.startedAt = Date.now();
-            step.controller = after(step.remaining + 'ms', () => {
-              currentIndex++;
-              executeNext();
-            });
-          } else {
-            step?.controller?.resume?.();
-          }
+        if (!isPaused || isCancelled) return;
+        isPaused = false;
+        const step = steps[currentIndex];
+        if (step.type === 'after') {
+          step.startedAt = Date.now();
+          step.controller = after(step.remaining + 'ms', () => {
+            currentIndex++;
+            executeNext();
+          });
+        } else {
+          step?.controller?.resume?.();
         }
       },
       cancel() {
         isCancelled = true;
-        steps[currentIndex]?.controller?.cancel?.();
+        const step = steps[currentIndex];
+        step?.controller?.cancel?.();
+        step.controller = null;
+      },
+      reset() {
+        runner.cancel();
+        steps.length = 0;
+        currentIndex = 0;
+        loopCount = 0;
+        onFinishCallback = null;
+        return runner;
       },
       get isPaused() {
         return isPaused;
@@ -77,10 +90,14 @@ export function chrono() {
   
     function executeNext() {
       if (isCancelled || isPaused) return;
+  
+      // End of timeline
       if (currentIndex >= steps.length) {
         if (loopEnabled && ++loopCount < loopLimit) {
           currentIndex = 0;
           executeNext();
+        } else {
+          onFinishCallback?.();
         }
         return;
       }
@@ -91,6 +108,7 @@ export function chrono() {
         step.delay = parseDuration(step.duration);
         step.startedAt = Date.now();
         step.controller = after(step.duration, () => {
+          step.controller = null;
           currentIndex++;
           executeNext();
         });
@@ -103,6 +121,7 @@ export function chrono() {
             step.fn(count++);
             if (count >= step.times) {
               ctrl.cancel();
+              step.controller = null;
               currentIndex++;
               executeNext();
             }
