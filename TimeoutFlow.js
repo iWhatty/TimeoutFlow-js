@@ -85,13 +85,35 @@ export function chrono() {
             onFinishCallback = null;
             return runner;
         },
+
         get isPaused() {
             return isPaused;
+        },
+
+        label(name) {
+            labelMap.set(name, steps.length); // point to next step index
+            return runner;
+        },
+
+        jumpTo(name) {
+            jumpTarget = name;
+            return runner;
         }
+
     };
 
     function executeNext() {
         if (isCancelled || isPaused) return;
+        
+        if (jumpTarget) {
+            const targetIndex = labelMap.get(jumpTarget);
+            if (typeof targetIndex === 'number') {
+                currentIndex = targetIndex;
+            } else {
+                throw new Error(`Label "${jumpTarget}" not found`);
+            }
+            jumpTarget = null; // reset after jump
+        }
 
         // End of timeline
         if (currentIndex >= steps.length) {
