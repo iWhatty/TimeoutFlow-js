@@ -6,7 +6,12 @@ import { parseDuration } from './parseDuration.js';
  * Schedules a one-time delayed function.
  * @param {string} duration - e.g. "5s", "500ms", "2m"
  * @param {Function} fn - callback to run
- * @returns {{ cancel(): void }}
+ * @returns {{
+*   pause(): void,
+*   resume(): void,
+*   cancel(): void,
+*   readonly isRunning: boolean,
+* }}
  */
 export function after(duration, fn, onFinish) {
   const ms = parseDuration(duration);

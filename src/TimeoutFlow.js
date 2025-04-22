@@ -1,7 +1,6 @@
 
 // ./src/TimeoutFlow.js
 
-import { parseDuration } from './parseDuration.js';
 import { after } from './after.js';
 import { every } from './every.js';
 

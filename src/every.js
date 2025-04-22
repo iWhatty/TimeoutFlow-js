@@ -14,7 +14,7 @@ import { parseDuration } from './parseDuration.js';
 *   pause(): void,
 *   resume(): void,
 *   cancel(): void,
-*   reset(hard?: boolean): void,
+*   reset(restart?: boolean): void,
 *   readonly isRunning: boolean,
 *   readonly count: number
 * }}
@@ -94,5 +94,5 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
         get isRunning() { return running; },
         get count() { return count; }
     };
-    
+
 }
