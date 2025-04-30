@@ -24,7 +24,7 @@ const timeMultipliers = {
 
     input = input.toLowerCase().trim();
 
-    const match = /^(\d+(?:\.\d+)?)\s*(ms|s|m|h)$/.exec(input);
+    const match = input.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h)$/);
 
     if (!match) {
       throw new Error(
