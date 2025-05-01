@@ -1,4 +1,4 @@
-## 🗯 Frame-Based Timing (RAF Utilities)
+## 🛯 Frame-Based Timing (RAF Utilities)
 
 These helpers use `requestAnimationFrame` under the hood to provide smooth, energy-efficient timing. Ideal for visual UI flows, canvas apps, scroll/resize behavior, and performance-sensitive interactions.
 
@@ -16,6 +16,7 @@ All `raf` utilities automatically **pause in background tabs**, unlike timers.
 | `debounceRaf('300ms', fn)` | Debounces like traditional debounce, but frame-aware.              | Resize events, paused background flows         |
 | `throttleRaf()`         | Throttles execution to **at most once per frame**.                     | Scroll events, pointermove, paint-heavy flows  |
 | `throttleRaf(fn, 2)`    | Throttles to once every 3 frames (`frameSkip = 2`).                     | Advanced visuals, slower sync without timers   |
+| `waitForRaf()`          | Waits for a condition to become true using a frame-based loop.         | DOM readiness, layout stability, visibility checks |
 
 ---
 
@@ -72,6 +73,13 @@ const onScroll = throttleRaf((e) => {
 const onDrag = throttleRaf(drawFrame, 2);
 ```
 
+```js
+import { waitForRaf } from './raf/waitForRaf.js';
+
+// Wait for an element to become visible or stable
+await waitForRaf(() => document.querySelector('#panel')?.offsetHeight > 0);
+```
+
 ---
 
 ### 📦 File Locations
@@ -82,4 +90,5 @@ const onDrag = throttleRaf(drawFrame, 2);
 | `raf/everyRaf.js`     | Interval timer using `requestAnimationFrame`           |
 | `raf/debounceRaf.js`  | Smart debounce with optional duration and frame pause  |
 | `raf/throttleRaf.js`  | Input-event throttle using frame-skip control          |
+| `raf/waitForRaf.js`   | Waits for truthy condition using passive frame polling |
 
