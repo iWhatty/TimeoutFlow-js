@@ -1,6 +1,7 @@
 // ./src/after.js
 import { parseDuration } from './parseDuration.js';
 
+import { AfterTimer } from './AfterTimer.js';
 
 /**
  * Schedules a one-time delayed function.

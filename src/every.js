@@ -2,11 +2,6 @@
 // ./src/every.js
 import { parseDuration } from './parseDuration.js';
 
-
-
-
-
-// ./src/every.js
 import { EveryTimer } from './EveryTimer.js';
 
 /**
