@@ -13,7 +13,7 @@ It's a composable mini-framework for expressing time as fluent logic.
 
 We believe temporal behavior in JavaScript should be:
 
--  **Readable** – durations like `"1s"` and `"500ms"` are easier to reason about than magic numbers.
+-  **Readable** – durations like "1s" and "500ms" are easier to reason about than magic numbers.
 -  **Composable** – sequencing events should be declarative, not a tangle of nested callbacks or timers.
 -  **Controllable** – any timer should be pauseable, resumable, and cancelable at any moment.
 -  **Branchable** – real flows require `if`, `while`, `label`, and `jumpTo()` — not just repetition.
@@ -50,8 +50,8 @@ npm install timeout-flow
 
 ##  Features
 
-- `after("1s", fn)` — delay execution
-- `every("500ms", fn, count?)` — repeat execution with optional limit
+- `after("1s", fn)` — delay execution (via `AfterTimer`)
+- `every("500ms", fn, count?)` — repeat execution with optional limit (via `EveryTimer`)
 - `flow()` — create fluent, chainable timelines with:
   - `.after()`, `.every()`, `.loop(n)`
   - `.if()`, `.unless()`, `.label()`, `.jumpTo()`
@@ -142,5 +142,5 @@ import { debounce, throttle, retry, waitFor } from 'timeout-flow';
 
 ##  License
 
-MIT
+DR.WATT 2.0
 
