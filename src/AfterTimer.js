@@ -19,19 +19,3 @@ export class AfterTimer extends TimerBase {
   }
 }
 
-/**
- * Schedules a one-time delayed function.
- *
- * @param {string|number} duration - e.g. '1s', 500, '2m'
- * @param {Function} fn - Main function to run
- * @param {Function} [onFinish] - Optional post-run callback
- * @returns {{
-*   pause(): void,
-*   resume(): void,
-*   cancel(): void,
-*   isRunning: boolean
-* }}
-*/
-export function after(duration, fn, onFinish) {
- return new AfterTimer(duration, fn, onFinish);
-}
