@@ -1,5 +1,5 @@
 // ./raf/waitForRaf.js
-import { parseDuration } from '../parseDuration.js';
+import { parseDuration } from '../src/parseDuration.js';
 
 /**
  * Waits for a condition to return truthy, polling each frame.

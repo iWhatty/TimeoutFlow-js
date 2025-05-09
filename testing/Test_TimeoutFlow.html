@@ -1,46 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <title>TimeoutFlow Test</title>
+  <meta charset="UTF-8" />
+  <title>TimeoutFlow Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1rem;
+      line-height: 1.5;
+    }
+    #log {
+      background: #f4f4f4;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-top: 1rem;
+      height: 200px;
+      overflow-y: auto;
+      white-space: pre-line;
+      font-family: monospace;
+    }
+    input {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+    }
+  </style>
 </head>
-
 <body>
-    <h1>TimeoutFlow Testing</h1>
-    <input id="search" placeholder="Type to debounce...">
-    <script type="module">
-        import { after, every, debounce, flow } from '../dist/timeout-flow.min.js';
+  <h1>🧪 TimeoutFlow Testing</h1>
+  <input id="search" placeholder="Type to debounce...">
+  <div id="log"></div>
 
-        // Example 1: after
-        after('1s', () => console.log('[test] Hello after 1s'));
-
-        // Example 2: every + pause/resume
-        let i = 1;
-        function log_ticks() {
-            console.log(`[test] Tick ${i++}`)
-        }
-        const ticker = every('1s', log_ticks, 5);
-
-
-        // Example 3: debounce
-        const logSearch = debounce('300ms', e => console.log('[test] Search:', e.target.value));
-        document.getElementById('search').addEventListener('input', logSearch);
-
-        // Example 4: flow timeline
-        function test_flow() {
-            flow()
-                .after('1s', () => console.log('[flow] Step 1'))
-                .every('500ms', i => console.log(`[flow] Tick ${i}`), 3)
-                .after('1s', () => console.log('[flow] Done'))
-                .start();
-        }
-
-        // Example 1: after
-        after('6s', test_flow);
-
-
-    </script>
+  <script type="module">
+    import { after, every, debounce, flow } from './timeout-flow.min.js';
+  
+    const logArea = document.getElementById('log');
+    const outputLines = [];
+  
+    function log(message) {
+      console.log(message);
+      outputLines.push(message);
+      const entry = document.createElement('div');
+      entry.textContent = message;
+      logArea.appendChild(entry);
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+  
+    // Expected output (in order)
+    const expectedLines = [
+      '[test] Hello after 1s',
+      '[test] Tick 1',
+      '[test] Tick 2',
+      '[test] Tick 3',
+      '[test] Tick 4',
+      '[test] Tick 5',
+      '[flow] Step 1',
+      '[flow] Tick 0',
+      '[flow] Tick 1',
+      '[flow] Tick 2',
+      '[flow] Done'
+    ];
+  
+    function assertOutput() {
+      const result = outputLines.slice(0, expectedLines.length);
+      const passed = result.every((line, i) => line === expectedLines[i]);
+  
+      log('---');
+      if (passed) {
+        log('✅ Assertion passed: output matches expected lines');
+      } else {
+        log('❌ Assertion failed: output did not match expected lines');
+        result.forEach((line, i) => {
+          const expected = expectedLines[i];
+          if (line !== expected) {
+            log(`  ✖ Line ${i + 1}: expected "${expected}" but got "${line}"`);
+          }
+        });
+      }
+    }
+  
+    // Setup tests
+    after('1s', () => log('[test] Hello after 1s'));
+  
+    let i = 1;
+    every('1s', () => log(`[test] Tick ${i++}`), 5);
+  
+    const logSearch = debounce('300ms', (e) => {
+      log(`[test] Search: "${e.target.value}"`);
+    });
+    document.getElementById('search').addEventListener('input', logSearch);
+  
+    function test_flow() {
+      flow()
+        .after('1s', () => log('[flow] Step 1'))
+        .every('500ms', i => log(`[flow] Tick ${i}`), 3)
+        .after('1s', () => {
+          log('[flow] Done');
+          assertOutput(); // 👈 Run assertion at end
+        })
+        .start();
+    }
+  
+    after('6s', test_flow);
+  </script>
 </body>
-
 </html>

@@ -1,3 +1,5 @@
+// ./src/index.js
+
 export { parseDuration } from './parseDuration.js';
 
 export { flow } from './TimeoutFlow.js';
@@ -11,3 +13,7 @@ export { every } from './every.js';
 
 export { waitFor } from './waitFor.js';
 export { retry } from './retry.js';
+
+
+// Add this line:
+export * from '../raf/index.js';

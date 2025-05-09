@@ -1,3 +1,6 @@
+
+// ./raf/throttleRaf.js
+
 /**
  * Throttles a function using requestAnimationFrame with optional frame skipping.
  * Ensures the function runs at most once per N-frames.

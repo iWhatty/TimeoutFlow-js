@@ -1,3 +1,7 @@
+// ./raf/afterRaf.js
+
+import { parseDuration } from '../src/parseDuration.js';
+
 /**
  * Schedules a one-time delayed function using requestAnimationFrame.
  * @param {string|number} duration - e.g. "5s", "500ms", 2000

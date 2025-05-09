@@ -1,3 +1,20 @@
+# Ignore all dev-only files and folders
+node_modules/
+tests/
+.vscode/
+.gitignore
+CREDITS.md
+jsconfig.json
+*.txt
+package-lock.json
+dist/*.html
+dist/*.map
+*.html
+local_dev_test/
+*.gz
+
+
+
 
 # Parcel cache
 .parcel-cache/

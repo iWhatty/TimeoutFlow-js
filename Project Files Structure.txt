@@ -1,0 +1,11 @@
+timeout-flow/
+├── dist/                    # Published output
+│   └── timeout-flow.min.js
+├── src/                     # Source code
+├── raf/                     # Raf code
+├── testing/                # Local test harness
+│   └── Test_TimeoutFlow.html
+├── .npmignore
+├── package.json
+├── README.md
+├── build.js
