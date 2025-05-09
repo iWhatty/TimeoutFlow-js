@@ -146,13 +146,13 @@ import { debounce, throttle, retry, waitFor } from 'timeout-flow';
 
 ---
 
-## 📈 Frame-Based Timing (RAF Utilities)
+##  Frame-Based Timing (RAF Utilities)
 
 These helpers use `requestAnimationFrame` under the hood to provide smooth, energy-efficient timing. Ideal for visual UI flows, canvas apps, scroll/resize behavior, and performance-sensitive interactions.
 
 All `raf` utilities automatically **pause in background tabs**, unlike timers.
 
-### 👉 API Summary
+###  API Summary
 
 | Function                   | Purpose                                                             | Best For                                           |
 | -------------------------- | ------------------------------------------------------------------- | -------------------------------------------------- |
@@ -164,12 +164,12 @@ All `raf` utilities automatically **pause in background tabs**, unlike timers.
 | `throttleRaf(fn, 2)`       | Throttles to once every 3 frames (`frameSkip = 2`).                 | Advanced visuals, slower sync without timers       |
 | `waitForRaf()`             | Waits for a condition to become true using a frame-based loop.      | DOM readiness, layout stability, visibility checks |
 
-### ✨ Key Advantages
+###  Key Advantages
 
-* 🔄 **Frame-sync**: Triggered in sync with visual updates (60Hz or higher)
-* 🛌 **Background-tab safe**: No CPU use when inactive
-* ⚡ **Energy efficient**: Great for battery-conscious apps
-* 🫘 **Smoother UX**: Especially under load or heavy visuals
+*  **Frame-sync**: Triggered in sync with visual updates (60Hz or higher)
+*  **Background-tab safe**: No CPU use when inactive
+*  **Energy efficient**: Great for battery-conscious apps
+*  **Smoother UX**: Especially under load or heavy visuals
 
 ### 🛠 Example Usage
 
@@ -217,7 +217,7 @@ import { waitForRaf } from 'timeout-flow';
 await waitForRaf(() => document.querySelector('#panel')?.offsetHeight > 0);
 ```
 
-### 📦 File Locations
+###  File Locations
 
 | File                 | Description                                            |
 | -------------------- | ------------------------------------------------------ |
