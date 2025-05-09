@@ -9,6 +9,9 @@
 
 TimeoutFlow makes working with time-based logic intuitive — think of it as a modern, composable upgrade to `setTimeout` and `setInterval`, with added powers like chaining, conditional logic, pause/resume, retries, and more.
 
+* Minified: 6.64 KB
+* Gzipped: 2.6 KB
+
 ---
 
 ## Philosophy

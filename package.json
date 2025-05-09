@@ -1,6 +1,6 @@
 {
   "name": "timeout-flow",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "description": "Fluent, composable, pauseable JavaScript timers and time control flows — plus RAF utilities for frame-based logic.",
   "keywords": [
