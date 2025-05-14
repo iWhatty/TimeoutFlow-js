@@ -1,25 +1,43 @@
-import { parseDuration } from './parseDuration.js';
+// ./src/throttle.js
+
+import { resolveDelayAndFn } from './resolveDelayAndFn.js';
+
 
 /**
- * Throttles a function to run at most once per given duration.
- * @param {string} duration - e.g. '1s', '500ms'
- * @param {Function} fn - the function to throttle
- * @returns {Function} throttled function
+ * Creates a throttled version of a function.
+ * Executes immediately, throttles further calls, optional trailing execution.
+ *
+ * @param {Function|string|number} a - Function or delay
+ * @param {Function|string|number} b - The other parameter
+ * @param {boolean} [trailing=true] - If true, fire once at trailing edge
+ * @returns {Function} Throttled function with a .cancel() method
  */
-export function throttle(duration, fn, { leading = true } = {}) {
-  const limit = parseDuration(duration);
-  let lastTime = 0;
+export function throttle(a, b, trailing = true) {
+  const { fn, delay } = resolveDelayAndFn(a, b);
+  let lastCall = 0;
+  let timeoutId = null;
 
-  return (...args) => {
+  const throttled = function (...args) {
+    const context = this;
     const now = Date.now();
-    if (leading && lastTime === 0) {
-      lastTime = now;
-      return fn(...args);
-    }
+    const timeSinceLast = now - lastCall;
 
-    if (now - lastTime >= limit) {
-      lastTime = now;
-      fn(...args);
+    if (timeSinceLast >= delay) {
+      lastCall = now;
+      fn.apply(context, args);
+    } else if (trailing && !timeoutId) {
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now();
+        timeoutId = null;
+        fn.apply(context, args);
+      }, delay - timeSinceLast);
     }
   };
+
+  throttled.cancel = () => {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  return throttled;
 }

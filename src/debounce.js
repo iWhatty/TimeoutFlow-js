@@ -1,17 +1,28 @@
-import { parseDuration } from './parseDuration.js';
+
+// ./src/debounce.js
+
+import { resolveDelayAndFn } from './resolveDelayAndFn.js';
 
 /**
- * Debounces a function, waiting until silence before firing.
- * @param {string} duration - e.g. '300ms', '1s'
- * @param {Function} fn - function to debounce
- * @returns {Function} debounced function
+ * Creates a debounced function.
+ * @param {Function|string|number} a
+ * @param {Function|string|number} b
+ * @returns {Function}
  */
-export function debounce(duration, fn) {
-  const ms = parseDuration(duration);
-  let timer = null;
+export function debounce(a, b) {
+  const { fn, delay } = resolveDelayAndFn(a, b);
+  let timeoutId = null;
 
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
+  const debounced = function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
   };
+
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+
+  return debounced;
 }
+

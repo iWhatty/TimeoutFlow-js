@@ -1,3 +1,8 @@
+
+// ./src/waitFor.js
+
+import { parseDuration } from './parseDuration.js';
+
 /**
  * Waits for a condition to become true, polling at intervals.
  * @param {Function} condition - returns truthy when satisfied
