@@ -234,4 +234,4 @@ await waitForRaf(() => document.querySelector('#panel')?.offsetHeight > 0);
 
 ## License
 
-DR.WATT 2.0
+DR.WATT v3.0
