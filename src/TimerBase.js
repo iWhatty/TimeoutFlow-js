@@ -73,26 +73,3 @@ export class TimerBase {
   }
 }
 
-
-// ./src/every.js
-import { EveryTimer } from './EveryTimer.js';
-
-/**
- * Runs a function every N ms with optional execution limit.
- *
- * @param {string|number} duration - e.g. '500ms', 1000
- * @param {Function} fn - Function to execute
- * @param {number} [max=Infinity] - Max times to run
- * @param {boolean} [runImmediately=false] - Run immediately on first tick
- * @returns {{
- *   pause(): void,
- *   resume(): void,
- *   cancel(): void,
- *   reset(restart?: boolean): void,
- *   readonly isRunning: boolean,
- *   readonly count: number
- * }}
- */
-export function every(duration, fn, max = Infinity, runImmediately = false) {
-  return new EveryTimer(duration, fn, max, runImmediately);
-}
