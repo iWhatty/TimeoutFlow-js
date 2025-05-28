@@ -1,6 +1,6 @@
 {
   "name": "timeout-flow",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "type": "module",
   "description": "Fluent, composable, pauseable JavaScript timers and time control flows — plus RAF utilities for frame-based logic.",
   "keywords": [
@@ -25,14 +25,16 @@
     "url": "git+https://github.com/iWhatty/TimeoutFlow-js.git"
   },
   "main": "./dist/timeout-flow.min.js",
-  "module": "./dist/timeout-flow.min.js",
+  "module": "./src/index.js",
   "browser": "./dist/timeout-flow.min.js",
   "exports": {
     ".": {
-      "development": "./src/index.js",
-      "import": "./dist/timeout-flow.min.js",
-      "require": "./dist/timeout-flow.min.js",
-      "default": "./dist/timeout-flow.min.js"
+      "browser": {
+        "import": "./dist/timeout-flow.min.js",
+        "require": "./dist/timeout-flow.min.js"
+      },
+      "import": "./src/index.js",
+      "require": "./dist/timeout-flow.min.js"
     }
   },
   "files": [

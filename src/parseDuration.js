@@ -1,10 +1,10 @@
 // ./src/parseDuration.js
 
 const timeMultipliers = {
-    ms: 1,
-    s: 1000,
-    m: 60_000,
-    h: 3_600_000,
+    "ms": 1,
+    "s": 1000,
+    "m": 60_000,
+    "h": 3_600_000,
   };
   
   /**
