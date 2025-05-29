@@ -7,6 +7,7 @@
 //   "h": 3_600_000,
 // });
 
+/** @const {!Object<string, number>} */
 const timeMultipliers = Object.freeze(JSON.parse(`{
   "ms": 1,
   "s": 1000,
