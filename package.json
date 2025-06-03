@@ -1,6 +1,6 @@
 {
   "name": "timeout-flow",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "type": "module",
   "description": "Fluent, composable, pauseable JavaScript timers and time control flows — plus RAF utilities for frame-based logic.",
   "keywords": [
@@ -41,9 +41,9 @@
     "dist/",
     "src/",
     "raf/",
-    "timeout-flow.d.ts"
+    "types/"
   ],
-  "types": "./timeout-flow.d.ts",
+  "types": "./types/index.d.ts",
   "scripts": {
     "dev": "serve testing",
     "build": "node build.js",
@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "esbuild": "^0.25.3",
-    "serve": "^14.2.4"
+    "serve": "^14.2.4",
+    "typescript": "^5.8.3"
   }
 }

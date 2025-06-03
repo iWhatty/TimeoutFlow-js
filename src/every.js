@@ -42,7 +42,7 @@ export function every(duration, fn, max = Infinity, runImmediately = false) {
 *   readonly count: number
 * }}
 */
-export function _every(duration, fn, max = Infinity, runImmediately = false) {
+export function _every(duration, fn, maxTimes = Infinity, runImmediately = false) {
     const ms = parseDuration(duration);
     let startTime = null;
     let remaining = ms;
@@ -52,7 +52,7 @@ export function _every(duration, fn, max = Infinity, runImmediately = false) {
     let count = 0;
 
     const tick = () => {
-        if (count >= max) {
+        if (count >= maxTimes) {
             cancel();
             return;
         }
@@ -77,7 +77,7 @@ export function _every(duration, fn, max = Infinity, runImmediately = false) {
     };
 
     const resume = () => {
-        if (!running && count < max && remaining > 0) {
+        if (!running && count < maxTimes && remaining > 0) {
             timer = setTimeout(tick, remaining);
             startTime = Date.now();
             running = true;

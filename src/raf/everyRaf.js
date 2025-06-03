@@ -1,7 +1,7 @@
 
 // ./raf/everyRaf.js
 
-import { parseDuration } from '../src/parseDuration.js';
+import { parseDuration } from '../parseDuration.js';
 
 /**
  * Repeats a function every N milliseconds using requestAnimationFrame

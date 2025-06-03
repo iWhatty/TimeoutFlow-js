@@ -1,0 +1,19 @@
+// tsconfig.json
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": false,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "outDir": "types",
+        "module": "esnext",
+        "target": "esnext",
+        "moduleResolution": "node",
+        "strict": true,
+        "rootDir": "src",
+        "esModuleInterop": true
+    },
+    "include": [
+        "src"
+    ]
+}

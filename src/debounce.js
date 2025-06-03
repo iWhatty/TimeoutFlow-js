@@ -3,21 +3,34 @@
 
 import { resolveDelayAndFn } from './resolveDelayAndFn.js';
 
+
 /**
- * Creates a debounced function.
- * @param {Function|string|number} a
- * @param {Function|string|number} b
- * @returns {Function}
+ * @typedef {((...args: any[]) => void) & { cancel: () => void }} DebouncedFunction
+ */
+
+
+/**
+ * Creates a debounced function that delays invoking `fn` until after `delay` ms.
+ * 
+ * @param {number|Function} a - Delay in ms or the function to debounce
+ * @param {Function} [b] - The function to debounce, if delay is first
+ * @returns {DebouncedFunction} A debounced function with `.cancel()`
  */
 export function debounce(a, b) {
   const { fn, delay } = resolveDelayAndFn(a, b);
   let timeoutId = null;
 
+  /**
+   * @param {...any[]} args
+   */
   const debounced = function (...args) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.apply(this, args), delay);
   };
 
+  /**
+   * Cancel any pending invocation
+   */
   debounced.cancel = () => {
     clearTimeout(timeoutId);
     timeoutId = null;
@@ -25,4 +38,3 @@ export function debounce(a, b) {
 
   return debounced;
 }
-

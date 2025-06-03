@@ -1,6 +1,6 @@
 // ./raf/afterRaf.js
 
-import { parseDuration } from '../src/parseDuration.js';
+import { parseDuration } from '../parseDuration.js';
 
 /**
  * Schedules a one-time delayed function using requestAnimationFrame.

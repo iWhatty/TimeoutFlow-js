@@ -1,6 +1,6 @@
 // ./raf/debounceRaf.js
 
-import { parseDuration } from '../src/parseDuration.js';
+import { parseDuration } from '../parseDuration.js';
 
 /**
  * Debounces a function using requestAnimationFrame.
