@@ -7,10 +7,13 @@ import { parseDuration } from './parseDuration.js';
  */
 export class TimerBase {
   #ms;
-  #startTime = null;
+  #startTime = null; // performance.now()
   #remaining;
   #timer = null;
+
   #running = false;
+  #paused = false;
+  #finished = false;
 
   /**
    * @param {string|number} duration - The duration to wait in ms or shorthand format
@@ -21,7 +24,7 @@ export class TimerBase {
   }
 
   /**
-   * Whether the timer is currently running.
+   * Whether the timer is currently running (actively counting down).
    * @returns {boolean}
    */
   get isRunning() {
@@ -29,47 +32,95 @@ export class TimerBase {
   }
 
   /**
+   * Whether the timer is paused (resumable).
+   * @returns {boolean}
+   */
+  get isPaused() {
+    return this.#paused;
+  }
+
+  /**
+   * Whether the timer has finished or been canceled (terminal state).
+   * @returns {boolean}
+   */
+  get isFinished() {
+    return this.#finished;
+  }
+
+  /**
    * Pause the active timer, storing remaining time.
    */
   pause() {
-    if (this.#running) {
-      clearTimeout(this.#timer);
-      this.#remaining -= Date.now() - this.#startTime;
-      this.#running = false;
-    }
+    if (!this.#running) return;
+
+    clearTimeout(this.#timer);
+    this.#timer = null;
+
+    const elapsed = performance.now() - this.#startTime;
+    this.#remaining = Math.max(0, this.#remaining - elapsed);
+
+    this.#running = false;
+    this.#paused = true;
+    // not finished; still resumable
   }
 
   /**
-   * Resume the timer using the remaining time.
+   * Resume the timer using the remaining time (or an override delay).
    * @param {Function} callback - Called when time completes
-   * @param {number|null} [overrideDelay] - Optional custom delay in ms
+   * @param {number|null} [overrideDelay=null] - Optional custom delay in ms
    */
   resume(callback, overrideDelay = null) {
-    if (!this.#running && this.#remaining > 0) {
-      this.#startTime = Date.now();
-      this.#running = true;
-      this.#timer = setTimeout(() => {
-        this.#running = false;
-        callback?.();
-      }, overrideDelay ?? this.#remaining);
-    }
+    if (this.#finished) return;
+    if (this.#running) return;
+
+    const delay = overrideDelay ?? this.#remaining;
+    if (!(delay > 0)) return;
+
+    // Important: remaining must reflect what we actually scheduled,
+    // otherwise pause() math will be wrong when overrideDelay is used.
+    this.#remaining = delay;
+
+    this.#startTime = performance.now();
+    this.#running = true;
+    this.#paused = false;
+
+    this.#timer = setTimeout(() => {
+      this.#timer = null;
+      this.#running = false;
+      this.#paused = false;
+      this.#finished = true;
+      this.#remaining = 0;
+      callback?.();
+    }, delay);
   }
 
   /**
-   * Cancel the timer immediately.
+   * Cancel the timer immediately (terminal).
    */
   cancel() {
-    clearTimeout(this.#timer);
-    this.#running = false;
+    if (this.#timer) clearTimeout(this.#timer);
     this.#timer = null;
+
+    this.#running = false;
+    this.#paused = false;
+    this.#finished = true;
+    // leave #remaining as-is or set to 0; prefer 0 for "terminal means done"
+    this.#remaining = 0;
   }
 
   /**
    * Reset the timer to its original delay, cancelling if needed.
+   * After reset, the timer is not running.
    */
   reset() {
-    this.cancel();
+    if (this.#timer) clearTimeout(this.#timer);
+    this.#timer = null;
+
+    this.#startTime = null;
     this.#remaining = this.#ms;
+
+    this.#running = false;
+    this.#paused = false;
+    this.#finished = false;
   }
 }
-

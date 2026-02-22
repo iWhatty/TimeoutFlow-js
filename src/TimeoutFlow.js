@@ -162,7 +162,7 @@ export function flow() {
             if (!next || next.type === 'label') {
                 skipMode = false; // stop skipping at label
             } else {
-                return increment_step(step);
+                return increment_step(next);
             }
         }
 
