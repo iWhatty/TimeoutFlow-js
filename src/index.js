@@ -15,5 +15,10 @@ export { waitFor } from './waitFor.js';
 export { retry } from './retry.js';
 
 
-// Add this line:
-export * from './raf/index.js';
+export {
+    afterRaf,
+    everyRaf,
+    debounceRaf,
+    throttleRaf,
+    waitForRaf
+} from './raf/index.js';

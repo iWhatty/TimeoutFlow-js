@@ -1,6 +1,7 @@
 // ./src/debounce.js
 
-import { resolveDelayAndFn } from './resolveDelayAndFn.js';
+import { resolveDelayFnOptions } from './resolveDelayAndFn.js';
+import { pendingAbort } from './abort.js';
 
 /**
  * @typedef {((...args: any[]) => void) & {
@@ -14,46 +15,76 @@ import { resolveDelayAndFn } from './resolveDelayAndFn.js';
  * until after `delay` ms of inactivity.
  *
  * Notes:
- * - Uses performance.now() for internal consistency.
  * - Always invokes with the latest arguments/context.
  * - `.cancel()` clears any pending invocation.
  * - `.flush()` immediately invokes if pending.
+ * - Optional AbortSignal: abort cancels pending invocation.
+ *
+ * Overloads:
+ * - debounce(fn, delay, [options])
+ * - debounce(delay, fn, [options])
+ * - debounce(fn, [options])              // delay defaults to 0
  *
  * @param {string|number|Function} a - Delay in ms or the function to debounce.
- * @param {string|number|Function} [b] - The function to debounce, if delay is first.
+ * @param {string|number|Function|Object} [b] - The fn, delay, or options.
+ * @param {Object} [c] - Options (when using 3 args).
  * @returns {DebouncedFunction}
  */
-export function debounce(a, b) {
-  const { fn, delay } = resolveDelayAndFn(a, b);
+export function debounce(a, b, c) {
+  const { fn, delay, options } = resolveDelayFnOptions(a, b, c, 0);
+  const signal = options?.signal;
 
-  let timeoutId = null;
+  const wait = Math.max(0, delay);
+
+  let timeoutId = 0;
+
+  /** @type {any[] | null} */
   let lastArgs = null;
+  /** @type {any | null} */
   let lastThis = null;
+
+  const abort = pendingAbort(signal, () => cancel());
 
   const invoke = () => {
     if (!lastArgs) return;
-    fn.apply(lastThis, lastArgs);
+
+    const args = lastArgs;
+    const ctx = lastThis;
+
+    // clear first (re-entrancy safe + GC friendly)
     lastArgs = null;
     lastThis = null;
+
+    abort.remove();
+    fn.apply(ctx, args);
   };
 
   const cancel = () => {
     if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = null;
+    timeoutId = 0;
+
     lastArgs = null;
     lastThis = null;
+
+    abort.remove();
   };
 
+  /** @type {any} */
   const debounced = function (...args) {
+    if (signal?.aborted) return;
+
     lastArgs = args;
     lastThis = this;
 
     if (timeoutId) clearTimeout(timeoutId);
 
+    // Listener should exist only while a call is pending
+    abort.add();
+
     timeoutId = setTimeout(() => {
-      timeoutId = null;
+      timeoutId = 0;
       invoke();
-    }, delay);
+    }, wait);
   };
 
   debounced.cancel = cancel;
@@ -61,9 +92,12 @@ export function debounce(a, b) {
   debounced.flush = () => {
     if (!timeoutId) return;
     clearTimeout(timeoutId);
-    timeoutId = null;
+    timeoutId = 0;
     invoke();
   };
+
+  // If already aborted at creation time, ensure clean slate.
+  if (signal?.aborted) cancel();
 
   return debounced;
 }

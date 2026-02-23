@@ -1,10 +1,13 @@
 // ./raf/waitForRaf.js
 import { parseDuration } from '../parseDuration.js';
+import { attachAbort } from '../abort.js';
 
 /**
  * Waits for a condition to return truthy, polling each frame.
- * - Ideal for visual state: DOM settling, visibility, layout changes.
- * - Respects tab inactivity (pause-safe).
+ *
+ * Timing model:
+ * - Evaluates `condition()` once per animation frame until it returns truthy.
+ * - If `timeout` is provided, timeout is measured in RAF time (frame timestamps).
  *
  * @param {Function} condition - Function returning truthy when complete
  * @param {Object} [options]
@@ -13,37 +16,35 @@ import { parseDuration } from '../parseDuration.js';
  * @param {boolean} [options.immediate=false] - If true, evaluate condition immediately before first frame
  * @returns {Promise<void>} Resolves when condition is met, rejects on timeout/abort
  */
-export function waitForRaf(
-  condition,
-  { timeout, signal, immediate = false } = {}
-) {
+export function waitForRaf(condition, { timeout, signal, immediate = false } = {}) {
   return new Promise((resolve, reject) => {
+    if (typeof condition !== 'function') {
+      reject(new TypeError(`waitForRaf: condition must be a function, got: ${typeof condition}`));
+      return;
+    }
+
     if (signal?.aborted) {
       reject(new DOMException('Aborted', 'AbortError'));
       return;
     }
 
-    const start = performance.now();
-    const timeoutMs = timeout != null ? parseDuration(timeout) : null;
+    const timeoutMs = timeout != null ? Math.max(0, parseDuration(timeout)) : null;
 
     let rafId = 0;
+    let startedAt = null; // RAF timestamp of first tick (or immediate tick reference)
+
+    const cleanup = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      cleanupAbort();
+    };
 
     const onAbort = () => {
       cleanup();
       reject(new DOMException('Aborted', 'AbortError'));
     };
 
-    const removeAbortListener = () => {
-      signal?.removeEventListener('abort', onAbort);
-    };
-
-    const cleanup = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = 0;
-      removeAbortListener();
-    };
-
-    if (signal) signal.addEventListener('abort', onAbort, { once: true });
+    const cleanupAbort = attachAbort(signal, onAbort);
 
     const evaluateCondition = () => {
       try {
@@ -55,7 +56,7 @@ export function waitForRaf(
       }
     };
 
-    // Optional immediate evaluation
+    // Optional immediate evaluation (before any frames)
     if (immediate) {
       const ok = evaluateCondition();
       if (ok === null) return;
@@ -64,9 +65,19 @@ export function waitForRaf(
         resolve();
         return;
       }
+
+      // If timeout is explicitly 0, and immediate failed, we can fail fast.
+      if (timeoutMs === 0) {
+        cleanup();
+        reject(new Error('waitForRaf timed out'));
+        return;
+      }
     }
 
-    const tick = (timestamp) => {
+    const tick = (ts) => {
+      // Initialize start time using the same clock as `ts`
+      if (startedAt == null) startedAt = ts;
+
       const ok = evaluateCondition();
       if (ok === null) return;
 
@@ -76,7 +87,7 @@ export function waitForRaf(
         return;
       }
 
-      if (timeoutMs != null && timestamp - start >= timeoutMs) {
+      if (timeoutMs != null && ts - startedAt >= timeoutMs) {
         cleanup();
         reject(new Error('waitForRaf timed out'));
         return;

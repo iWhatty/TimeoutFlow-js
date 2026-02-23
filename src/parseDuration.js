@@ -1,19 +1,5 @@
 // ./src/parseDuration.js
 
-// const timeMultipliers = Object.freeze({
-//   "ms": 1,
-//   "s": 1000,
-//   "m": 60_000,
-//   "h": 3_600_000,
-// });
-
-/** @const {!Object<string, number>} */
-const timeMultipliers = Object.freeze(JSON.parse(`{
-  "ms": 1,
-  "s": 1000,
-  "m": 60000,
-  "h": 3600000
-}`));
 
 /**
  * Parses a duration string like "2s", "1.5m", "500ms" into milliseconds.
@@ -22,7 +8,10 @@ const timeMultipliers = Object.freeze(JSON.parse(`{
  * @returns {number}
  */
 export function parseDuration(input) {
-  if (typeof input === 'number' && Number.isFinite(input)) {
+  if (typeof input === 'number') {
+    if (!Number.isFinite(input)) {
+      throw new TypeError(`Expected a finite number of ms, got: ${input}`);
+    }
     return input;
   }
 
@@ -30,9 +19,8 @@ export function parseDuration(input) {
     throw new TypeError(`Expected a duration string or number, got ${typeof input}`);
   }
 
-  input = input.toLowerCase().trim();
-
-  const match = input.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h)$/);
+  const str = input.toLowerCase().trim();
+  const match = str.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h)$/);
 
   if (!match) {
     throw new Error(
@@ -40,6 +28,20 @@ export function parseDuration(input) {
     );
   }
 
-  const [, value, unit] = match;
-  return parseFloat(value) * timeMultipliers[unit];
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) {
+    throw new TypeError(`Invalid duration value: "${match[1]}"`);
+  }
+
+  const unit = match[2];
+
+  switch (unit) {
+    case 'ms': return value;
+    case 's': return value * 1000;
+    case 'm': return value * 60_000;
+    case 'h': return value * 3_600_000;
+    default:
+      // Should be unreachable due to regex, but keeps function total.
+      throw new Error(`Unsupported duration unit: "${unit}"`);
+  }
 }

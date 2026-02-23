@@ -17,7 +17,7 @@ build({
   bundle: true,
   minify: shouldMinify,
   format: 'esm',
-  target: ['es2020'],
+  target: ['es2022'],
   sourcemap: shouldSourceMap,
   platform: 'browser',
   banner: {

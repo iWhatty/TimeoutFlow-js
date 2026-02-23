@@ -73,8 +73,13 @@ export class TimerBase {
     if (this.#finished) return;
     if (this.#running) return;
 
-    const delay = overrideDelay ?? this.#remaining;
-    if (!(delay > 0)) return;
+    const rawDelay = overrideDelay ?? this.#remaining;
+
+    // Reject invalid delays (avoid scheduling with NaN/Infinity/etc.)
+    if (!Number.isFinite(rawDelay) || rawDelay < 0) return;
+
+    // Support 0ms timers (schedule next macrotask)
+    const delay = Math.max(0, rawDelay);
 
     // Important: remaining must reflect what we actually scheduled,
     // otherwise pause() math will be wrong when overrideDelay is used.
