@@ -1,12 +1,35 @@
 /**
- * Throttles a function using requestAnimationFrame with optional frame skipping.
- * Ensures the function runs at most once per N-frames.
- * - frameSkip = 0 → run every frame
- * - frameSkip = 1 → run every 2nd frame
- * - frameSkip = 2 → run every 3rd frame, etc.
+ * Throttles a function using `requestAnimationFrame`, with optional frame skipping.
  *
- * @param {Function} fn - Function to throttle
- * @param {number} [frameSkip=0] - Number of frames to skip between calls
- * @returns {Function} throttled function
+ * Preferred:
+ * - throttleRaf(fn, [frameSkip], [options])
+ *
+ * Also supported:
+ * - throttleRaf(fn, [options])               // frameSkip defaults to 0
+ *
+ * Executes at most once every `(frameSkip + 1)` frames.
+ *
+ * Argument behavior while throttled:
+ * - trailing=true  (default): uses the latest args/this seen while waiting
+ * - trailing=false: keeps the first args/this and ignores later calls until it fires
+ *
+ * AbortSignal:
+ * - If `signal` is provided, abort will cancel any pending scheduled execution.
+ * - Listener is attached only while a call is pending.
+ *
+ * @template {(...args: any[]) => any} T
+ * @param {T} fn
+ * @param {number|{signal?: AbortSignal, trailing?: boolean}} [frameSkipOrOptions=0]
+ * @param {{signal?: AbortSignal, trailing?: boolean}} [maybeOptions]
+ * @returns {T & { cancel: () => void, flush: () => void }}
  */
-export function throttleRaf(fn: Function, frameSkip?: number): Function;
+export function throttleRaf<T extends (...args: any[]) => any>(fn: T, frameSkipOrOptions?: number | {
+    signal?: AbortSignal;
+    trailing?: boolean;
+}, maybeOptions?: {
+    signal?: AbortSignal;
+    trailing?: boolean;
+}): T & {
+    cancel: () => void;
+    flush: () => void;
+};

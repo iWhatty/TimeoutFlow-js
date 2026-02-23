@@ -1,20 +1,27 @@
 // ./raf/afterRaf.js
-import { parseDuration } from '../parseDuration.js';
+import { resolveDelayFnOptions } from '../resolveDelayAndFn.js';
 import { attachAbort } from '../abort.js';
-import { now } from '../now.js'
+import { now } from '../now.js';
 
 /**
  * Schedules a one-time delayed function using requestAnimationFrame.
+ *
+ * Preferred:
+ * - afterRaf(fn, duration, [options])
+ *
+ * Also supported (legacy):
+ * - afterRaf(duration, fn, [onFinish], [options])
  *
  * Timing model:
  * - Uses frame timestamps for progression.
  * - Paused time does NOT count toward elapsed time (pause freezes remaining).
  *
- * @param {string|number} duration - e.g. "5s", "500ms", 2000
- * @param {Function} fn - callback to run
- * @param {Function} [onFinish] - optional callback after finishing
- * @param {Object} [options]
- * @param {AbortSignal} [options.signal] - optional AbortSignal to auto-cancel
+ * @param {Function|string|number} a
+ * @param {Function|string|number|Object} b
+ * @param {Function|Object} [c] - legacy onFinish OR options
+ * @param {Object} [d] - legacy options (when using 4 args)
+ * @param {Function} [c.onFinish] - optional callback after finishing (preferred: in options)
+ * @param {AbortSignal} [c.signal] - optional AbortSignal to auto-cancel
  * @returns {{
  *   pause(): void,
  *   resume(): void,
@@ -25,8 +32,18 @@ import { now } from '../now.js'
  *   readonly isFinished: boolean
  * }}
  */
-export function afterRaf(duration, fn, onFinish, { signal } = {}) {
-  const totalMs = parseDuration(duration);
+export function afterRaf(a, b, c, d) {
+  const legacyOnFinish = typeof c === 'function' ? c : undefined;
+  const maybeOptions = legacyOnFinish ? d : c;
+
+  // Require explicit duration: defaultDelay = undefined
+  const { fn, delay, options } = resolveDelayFnOptions(a, b, maybeOptions, undefined);
+
+  const { signal, onFinish } = legacyOnFinish
+    ? { ...options, onFinish: legacyOnFinish }
+    : options;
+
+  const totalMs = Math.max(0, delay);
 
   let rafId = 0;
 
@@ -45,27 +62,49 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
     rafId = 0;
   };
 
-  // Will be replaced by attachAbort() if signal is provided.
   let cleanupAbort = () => { };
 
-  function finish() {
+  const cleanupAbortListener = () => {
+    cleanupAbort();
+    cleanupAbort = () => { };
+  };
+
+  const finish = () => {
     cancelFrame();
     running = false;
     paused = false;
     finished = true;
     segmentStart = null;
     remaining = 0;
-    cleanupAbort();
-  }
+    cleanupAbortListener();
+  };
 
-  function cancel() {
+  const execFinish = () => {
+    finish();
+    fn?.();
+    onFinish?.();
+  };
+
+  const cancel = () => {
     if (finished) return;
     finish();
-  }
+  };
 
-  // Attach abort once for this run.
-  // (Matches existing behavior: reset() does not reattach.)
-  cleanupAbort = attachAbort(signal, cancel);
+  const attachAbortListener = () => {
+    cleanupAbortListener();
+
+    // Preserve semantics: if already aborted, become terminal.
+    if (signal?.aborted) {
+      finished = true;
+      remaining = 0;
+      return;
+    }
+
+    cleanupAbort = attachAbort(signal, cancel);
+  };
+
+  // Attach abort for the lifetime of this timer instance
+  attachAbortListener();
 
   const tick = (ts) => {
     if (!running || finished) return;
@@ -75,9 +114,7 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
     const elapsed = ts - segmentStart;
 
     if (elapsed >= remaining) {
-      finish();
-      fn?.();
-      onFinish?.();
+      execFinish();
       return;
     }
 
@@ -90,9 +127,9 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
     cancelFrame();
 
     // Freeze remaining based on how long we ran in this segment
-    const now = now();
+    const currentTime = now();
     if (segmentStart != null) {
-      const elapsed = now() - segmentStart;
+      const elapsed = currentTime - segmentStart;
       remaining = Math.max(0, remaining - elapsed);
     }
 
@@ -107,9 +144,7 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
 
     // If nothing remains, finish synchronously
     if (!(remaining > 0)) {
-      finish();
-      fn?.();
-      onFinish?.();
+      execFinish();
       return;
     }
 
@@ -129,12 +164,12 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
     paused = false;
     finished = false;
 
-    // Keep the same AbortSignal semantics:
-    // if the signal is already aborted, remain terminal.
-    if (signal?.aborted) {
-      finished = true;
-      remaining = 0;
-      cleanupAbort(); // no-op if nothing attached
+    // Re-attach abort on reset (more consistent with non-RAF timers)
+    attachAbortListener();
+
+    if (finished) {
+      // signal was aborted during attachAbortListener()
+      return;
     }
   };
 
@@ -142,15 +177,13 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
   if (!finished) {
     // Support 0ms: fire on next frame (consistent with RAF timing)
     if (!(remaining > 0)) {
-      finish();
-      fn?.();
-      onFinish?.();
+      execFinish();
     } else {
       running = true;
       rafId = requestAnimationFrame(tick);
     }
   } else {
-    cleanupAbort();
+    cleanupAbortListener();
   }
 
   return {

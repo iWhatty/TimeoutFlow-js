@@ -1,23 +1,30 @@
 // ./raf/everyRaf.js
-import { parseDuration } from '../parseDuration.js';
+import { resolveDelayFnOptions } from '../resolveDelayAndFn.js';
 import { attachAbort } from '../abort.js';
-import { now } from '../now.js'
+import { now } from '../now.js';
+
+const isPlainOptions = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
 
 /**
  * Repeats a function every N milliseconds using requestAnimationFrame.
+ *
+ * Preferred:
+ * - everyRaf(fn, duration, [options])
+ *
+ * Also supported (legacy):
+ * - everyRaf(duration, fn, [maxTimes], [runImmediately], [options])
  *
  * Timing model:
  * - Counts down using frame deltas.
  * - Paused time does NOT count (pause freezes remaining-to-next-tick).
  * - On large frame gaps, may "catch up" by running multiple ticks in one frame,
- *   but will never exceed maxTimes.
+ *   but will never exceed max.
  *
- * @param {string|number} duration - Interval duration ("1s", "500ms", 500, etc.)
- * @param {Function} fn - Function to run (receives count index)
- * @param {number} [maxTimes=Infinity] - Max number of executions
- * @param {boolean} [runImmediately=false] - Whether to run immediately once
- * @param {Object} [options]
- * @param {AbortSignal} [options.signal] - optional AbortSignal to auto-cancel
+ * @param {Function|string|number} a
+ * @param {Function|string|number|Object} b
+ * @param {number|boolean|Object} [c] - legacy maxTimes OR legacy runImmediately OR options
+ * @param {boolean|Object} [d] - legacy runImmediately OR options
+ * @param {Object} [e] - legacy options
  * @returns {{
  *   pause(): void,
  *   resume(): void,
@@ -29,17 +36,59 @@ import { now } from '../now.js'
  *   readonly count: number
  * }}
  */
-export function everyRaf(
-    duration,
-    fn,
-    maxTimes = Infinity,
-    runImmediately = false,
-    { signal } = {}
-) {
-    const intervalMs = parseDuration(duration);
+export function everyRaf(a, b, c, d, e) {
+    const durationFirst = typeof a !== 'function';
+
+    // ---- Normalize legacy positional args into options (without breaking legacy behavior) ----
+    let legacyMax;
+    let legacyRunImmediately;
+
+    /** @type {any} */
+    let optionsCandidate;
+
+    if (durationFirst) {
+        // Legacy or duration-first:
+        // - everyRaf(duration, fn, options)
+        // - everyRaf(duration, fn, maxTimes, runImmediately, options)
+        // - everyRaf(duration, fn, maxTimes, options)
+        // - everyRaf(duration, fn, runImmediately, options)  (extra leniency)
+        if (isPlainOptions(c)) {
+            optionsCandidate = c;
+        } else if (isPlainOptions(d)) {
+            optionsCandidate = d;
+        } else if (isPlainOptions(e)) {
+            optionsCandidate = e;
+        } else {
+            optionsCandidate = {};
+        }
+
+        if (typeof c === 'number') legacyMax = c;
+        if (typeof d === 'boolean') legacyRunImmediately = d;
+
+        // Lenient support: (duration, fn, true, options) => runImmediately=true
+        if (legacyRunImmediately == null && typeof c === 'boolean') legacyRunImmediately = c;
+    } else {
+        // Preferred fn-first:
+        // - everyRaf(fn, duration, options?)
+        optionsCandidate = isPlainOptions(c) ? c : {};
+    }
+
+    // Parse fn + duration using shared helper (duration is REQUIRED)
+    const { fn, delay, options } = resolveDelayFnOptions(a, b, optionsCandidate, undefined);
+
+    const signal = options?.signal;
+
+    const maxFromOptions = options?.max ?? Infinity;
+    const runImmediatelyFromOptions = options?.runImmediately ?? false;
+
+    // Legacy positional should win (to preserve prior behavior)
+    const max = legacyMax != null ? legacyMax : maxFromOptions;
+    const runImmediately =
+        legacyRunImmediately != null ? legacyRunImmediately : runImmediatelyFromOptions;
+
+    const intervalMs = Math.max(0, delay);
 
     let rafId = 0;
-
     let count = 0;
 
     // remaining time until next tick (pause-safe)
@@ -57,8 +106,12 @@ export function everyRaf(
         rafId = 0;
     };
 
-    // Abort listener cleanup (attached once per construction run)
     let cleanupAbort = () => { };
+
+    const cleanupAbortListener = () => {
+        cleanupAbort();
+        cleanupAbort = () => { };
+    };
 
     const finish = () => {
         cancelFrame();
@@ -69,7 +122,7 @@ export function everyRaf(
         lastTs = null;
         remainingToNext = 0;
 
-        cleanupAbort();
+        cleanupAbortListener();
     };
 
     const cancel = () => {
@@ -77,17 +130,22 @@ export function everyRaf(
         finish();
     };
 
-    // Preserve existing semantics:
-    // - If already aborted at creation, just mark finished/zero remaining (do not attach).
-    // - Otherwise attach abort listener once; removed on finish().
-    if (signal?.aborted) {
-        finished = true;
-        remainingToNext = 0;
-    } else {
-        cleanupAbort = attachAbort(signal, cancel);
-    }
+    const attachAbortListener = () => {
+        cleanupAbortListener();
 
-    const canRunMore = () => count < maxTimes;
+        // Preserve semantics: if already aborted, become terminal (and do not attach).
+        if (signal?.aborted) {
+            finished = true;
+            remainingToNext = 0;
+            return;
+        }
+
+        cleanupAbort = attachAbort(signal, cancel);
+    };
+
+    attachAbortListener();
+
+    const canRunMore = () => count < max;
 
     const fire = () => {
         fn?.(count++);
@@ -122,6 +180,7 @@ export function everyRaf(
         // Catch-up loop: if we missed multiple intervals, fire multiple times.
         // Protect against infinite loops: intervalMs could be 0.
         const step = Math.max(0, intervalMs);
+
         if (step === 0) {
             // If interval is 0ms, treat as "once per frame"
             remainingToNext = 0;
@@ -131,11 +190,10 @@ export function everyRaf(
         }
 
         while (remainingToNext <= 0 && !finished) {
-            // We reached the next tick boundary
             const ok = fire();
             if (!ok) return;
 
-            // Schedule next boundary: carry over overshoot
+            // carry over overshoot
             remainingToNext += step;
         }
 
@@ -144,10 +202,12 @@ export function everyRaf(
 
     const startLoop = () => {
         if (finished) return;
+
         if (signal?.aborted) {
             finish();
             return;
         }
+
         if (!canRunMore()) {
             finish();
             return;
@@ -165,9 +225,9 @@ export function everyRaf(
         cancelFrame();
 
         // Freeze remainingToNext based on time since lastTs
-        const now = now();
+        const currentTime = now(); // ✅ fixed: no shadowing / TDZ
         if (lastTs != null) {
-            const delta = now - lastTs;
+            const delta = currentTime - lastTs;
             remainingToNext = Math.max(0, remainingToNext - delta);
         }
 
@@ -199,18 +259,13 @@ export function everyRaf(
         paused = false;
         finished = false;
 
-        if (signal?.aborted) {
-            finished = true;
-            remainingToNext = 0;
-            cleanupAbort(); // no-op if nothing attached; mirrors prior removeAbortListener path
-            return;
-        }
+        // Re-attach abort on reset (consistent with non-RAF timers)
+        attachAbortListener();
+        if (finished) return;
 
-        // If maxTimes is already satisfied by definition (<=0 but not Infinity), finish.
-        if (!(maxTimes > 0) && maxTimes !== Infinity) {
-            finished = true;
-            remainingToNext = 0;
-            cleanupAbort();
+        // If max is already satisfied by definition (<=0 but not Infinity), finish.
+        if (!(max > 0) && max !== Infinity) {
+            finish();
             return;
         }
 
@@ -226,21 +281,19 @@ export function everyRaf(
 
     // Initial launch
     if (!finished) {
-        // If maxTimes is "zero-ish", finish immediately.
-        if (!(maxTimes > 0) && maxTimes !== Infinity) {
+        if (!(max > 0) && max !== Infinity) {
             finish();
         } else {
             if (runImmediately && canRunMore()) {
                 fire();
             }
             if (!finished) {
-                // If interval is 0, treat as "once per frame"
                 remainingToNext = Math.max(0, intervalMs);
                 startLoop();
             }
         }
     } else {
-        cleanupAbort();
+        cleanupAbortListener();
     }
 
     return {

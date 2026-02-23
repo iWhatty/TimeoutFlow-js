@@ -1,48 +1,40 @@
 /**
  * Runs a function every N ms with optional execution limit.
  *
- * @param {string|number} duration - e.g. '500ms', 1000
- * @param {Function} fn - Function to execute
- * @param {number} [max=Infinity] - Max times to run
- * @param {boolean} [runImmediately=false] - Run immediately on first tick
- * @returns {{
- *   pause(): void,
- *   resume(): void,
- *   cancel(): void,
- *   reset(restart?: boolean): void,
- *   readonly isRunning: boolean,
- *   readonly count: number
- * }}
- */
-export function every(duration: string | number, fn: Function, max?: number, runImmediately?: boolean): {
-    pause(): void;
-    resume(): void;
-    cancel(): void;
-    reset(restart?: boolean): void;
-    readonly isRunning: boolean;
-    readonly count: number;
-};
-/**
- * Runs a function every N milliseconds with optional execution limit.
- * Returns control methods: pause, resume, cancel, reset, and status flags.
+ * Preferred:
+ * - every(fn, duration, [options])
  *
- * @param {string|number} duration - e.g. "1s", "500ms", "2m" or raw ms
- * @param {Function} fn - function to execute
- * @param {number} [maxTimes] - optional number of times to run
+ * Also supported (legacy/alt):
+ * - every(duration, fn, [options])
+ *
+ * @param {Function|string|number} a - Function or duration (see overloads)
+ * @param {Function|string|number|Object} b - Duration, function, or options
+ * @param {Object} [c] - Options
+ * @param {number} [c.max=Infinity] - Max times to run
+ * @param {boolean} [c.runImmediately=false] - Run immediately on first tick
+ * @param {AbortSignal} [c.signal] - Optional AbortSignal to auto-cancel
  * @returns {{
 *   pause(): void,
 *   resume(): void,
 *   cancel(): void,
 *   reset(restart?: boolean): void,
 *   readonly isRunning: boolean,
+*   readonly isPaused: boolean,
+*   readonly isFinished: boolean,
 *   readonly count: number
 * }}
 */
-export function _every(duration: string | number, fn: Function, maxTimes?: number, runImmediately?: boolean): {
+export function every(a: Function | string | number, b: Function | string | number | Object, c?: {
+    max?: number | undefined;
+    runImmediately?: boolean | undefined;
+    signal?: AbortSignal | undefined;
+}): {
     pause(): void;
     resume(): void;
     cancel(): void;
     reset(restart?: boolean): void;
     readonly isRunning: boolean;
+    readonly isPaused: boolean;
+    readonly isFinished: boolean;
     readonly count: number;
 };

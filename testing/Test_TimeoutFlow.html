@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>TimeoutFlow Test</title>
@@ -9,34 +10,39 @@
       padding: 1rem;
       line-height: 1.5;
     }
+
     #log {
       background: #f4f4f4;
       border: 1px solid #ccc;
       padding: 1rem;
       margin-top: 1rem;
-      height: 200px;
+      height: 240px;
       overflow-y: auto;
       white-space: pre-line;
       font-family: monospace;
     }
+
     input {
       font-size: 1rem;
       padding: 0.5rem;
       margin-top: 0.5rem;
+      width: 320px;
     }
   </style>
 </head>
+
 <body>
-  <h1>🧪 TimeoutFlow Testing</h1>
+  <h1>🧪 TimeoutFlow Testing (Browser)</h1>
   <input id="search" placeholder="Type to debounce...">
   <div id="log"></div>
 
   <script type="module">
     import { after, every, debounce, flow } from './timeout-flow.min.js';
-  
+
     const logArea = document.getElementById('log');
+    const searchEl = document.getElementById('search');
     const outputLines = [];
-  
+
     function log(message) {
       console.log(message);
       outputLines.push(message);
@@ -45,26 +51,31 @@
       logArea.appendChild(entry);
       logArea.scrollTop = logArea.scrollHeight;
     }
-  
-    // Expected output (in order)
+
     const expectedLines = [
-      '[test] Hello after 1s',
-      '[test] Tick 1',
-      '[test] Tick 2',
-      '[test] Tick 3',
-      '[test] Tick 4',
-      '[test] Tick 5',
+      '[after] duration-first',
+      '[after] fn-first',
+
+      '[every] Tick 1',
+      '[every] Tick 2',
+      '[every] Tick 3',
+      '[every] Tick 4',
+      '[every] Tick 5',
+
       '[flow] Step 1',
       '[flow] Tick 0',
       '[flow] Tick 1',
       '[flow] Tick 2',
-      '[flow] Done'
+      '[flow] Done',
+
+      // Optional manual debounce line will appear if you type:
+      // [debounce] "<value>"
     ];
-  
+
     function assertOutput() {
       const result = outputLines.slice(0, expectedLines.length);
       const passed = result.every((line, i) => line === expectedLines[i]);
-  
+
       log('---');
       if (passed) {
         log('✅ Assertion passed: output matches expected lines');
@@ -78,30 +89,83 @@
         });
       }
     }
-  
-    // Setup tests
-    after('1s', () => log('[test] Hello after 1s'));
-  
-    let i = 1;
-    every('1s', () => log(`[test] Tick ${i++}`), 5);
-  
-    const logSearch = debounce('300ms', (e) => {
-      log(`[test] Search: "${e.target.value}"`);
-    });
-    document.getElementById('search').addEventListener('input', logSearch);
-  
-    function test_flow() {
+
+    // ----------------
+    // Phase 1: after()
+    // ----------------
+    function afterDurationFirst() {
+      log('[after] duration-first');
+    }
+    function afterFnFirst() {
+      log('[after] fn-first');
+    }
+
+    function runAfterPhase(next) {
+      after('200ms', afterDurationFirst);
+      after(afterFnFirst, '250ms');
+
+      // barrier
+      after('400ms', next);
+    }
+
+    // ----------------
+    // Phase 2: every()
+    // ----------------
+    let tickCount = 1;
+    function tick() {
+      log(`[every] Tick ${tickCount++}`);
+    }
+
+    function runEveryPhase(next) {
+      tickCount = 1;
+      every('150ms', tick, { max: 5 });
+
+      // barrier: 5 ticks * 150ms + slack
+      after('1000ms', next);
+    }
+
+    // ----------------
+    // Phase 3: flow()
+    // ----------------
+    function flowStep1() {
+      log('[flow] Step 1');
+    }
+    function flowTick(i) {
+      log(`[flow] Tick ${i}`);
+    }
+    function flowDone() {
+      log('[flow] Done');
+      assertOutput();
+    }
+
+    function runFlowPhase() {
       flow()
-        .after('1s', () => log('[flow] Step 1'))
-        .every('500ms', i => log(`[flow] Tick ${i}`), 3)
-        .after('1s', () => {
-          log('[flow] Done');
-          assertOutput(); // 👈 Run assertion at end
-        })
+        .after('200ms', flowStep1)
+        .every('150ms', flowTick, 3)     // flow DSL stays numeric ✅
+        .after('200ms', flowDone)
         .start();
     }
-  
-    after('6s', test_flow);
+
+    // ----------------
+    // Debounce (manual)
+    // ----------------
+    function onDebounced(e) {
+      log(`[debounce] "${e.target.value}"`);
+    }
+    const logSearch = debounce('300ms', onDebounced);
+    searchEl.addEventListener('input', logSearch);
+
+    // ----------------
+    // Run all phases sequentially
+    // ----------------
+    function main() {
+      runAfterPhase(function () {
+        runEveryPhase(runFlowPhase);
+      });
+    }
+
+    main();
   </script>
 </body>
+
 </html>

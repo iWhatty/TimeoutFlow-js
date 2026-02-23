@@ -1,15 +1,22 @@
 // ./src/every.js
 import { EveryTimer } from './EveryTimer.js';
+import { resolveDelayFnOptions } from './resolveDelayAndFn.js';
 
 /**
  * Runs a function every N ms with optional execution limit.
  *
- * @param {string|number} duration - e.g. '500ms', 1000
- * @param {Function} fn - Function to execute
- * @param {Object} [options]
- * @param {number} [options.max=Infinity] - Max times to run
- * @param {boolean} [options.runImmediately=false] - Run immediately on first tick
- * @param {AbortSignal} [options.signal] - Optional AbortSignal to auto-cancel
+ * Preferred:
+ * - every(fn, duration, [options])
+ *
+ * Also supported (legacy/alt):
+ * - every(duration, fn, [options])
+ *
+ * @param {Function|string|number} a - Function or duration (see overloads)
+ * @param {Function|string|number|Object} b - Duration, function, or options
+ * @param {Object} [c] - Options
+ * @param {number} [c.max=Infinity] - Max times to run
+ * @param {boolean} [c.runImmediately=false] - Run immediately on first tick
+ * @param {AbortSignal} [c.signal] - Optional AbortSignal to auto-cancel
  * @returns {{
 *   pause(): void,
 *   resume(): void,
@@ -21,7 +28,8 @@ import { EveryTimer } from './EveryTimer.js';
 *   readonly count: number
 * }}
 */
-export function every(duration, fn, options) {
-    return new EveryTimer(duration, fn, options);
+export function every(a, b, c) {
+    // require explicit duration: defaultDelay = undefined
+    const { fn, delay, options } = resolveDelayFnOptions(a, b, c, undefined);
+    return new EveryTimer(delay, fn, options);
 }
-

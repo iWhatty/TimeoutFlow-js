@@ -1,10 +1,17 @@
 // ./raf/debounceRaf.js
-import { parseDuration } from '../parseDuration.js';
+import { resolveDelayFnOptions } from '../resolveDelayAndFn.js';
 import { pendingAbort } from '../abort.js';
-import { now } from '../now.js'
+import { now } from '../now.js';
 
 /**
  * Debounces a function using requestAnimationFrame.
+ *
+ * Preferred:
+ * - debounceRaf(fn, [duration], [options])     // duration defaults to 0 (next frame)
+ *
+ * Also supported:
+ * - debounceRaf(duration, fn, [options])
+ * - debounceRaf(fn, [options])
  *
  * Timing model:
  * - Waits until `ms` of inactivity have passed (measured using frame timestamps).
@@ -15,118 +22,106 @@ import { now } from '../now.js'
  * - `.flush()` immediately invokes if pending.
  * - Optional AbortSignal: abort cancels any pending invocation.
  *
- * Overloads:
- * - debounceRaf(fn, [options])                  // ms defaults to 0 (next frame)
- * - debounceRaf(duration, fn, [options])
- *
- * @param {string|number|Function} durationOrFn - Duration (e.g., "300ms") or fn directly
- * @param {Function|Object} [callbackFnOrOptions] - Callback (if duration first) OR options (if fn first)
- * @param {Object} [options]
- * @param {AbortSignal} [options.signal] - AbortSignal to auto-cancel pending work
+ * @param {Function|string|number} a - function or duration
+ * @param {Function|string|number|Object} [b] - duration, fn, or options
+ * @param {Object} [c] - options (3-arg form)
+ * @param {AbortSignal} [c.signal] - AbortSignal to auto-cancel pending work
  * @returns {((...args: any[]) => void) & { cancel: () => void, flush: () => void }}
  */
-export function debounceRaf(durationOrFn, callbackFnOrOptions, options) {
-  const durationFirst = typeof durationOrFn !== 'function';
+export function debounceRaf(a, b, c) {
+    // duration is optional for debounceRaf (defaults to 0)
+    const { fn, delay, options } = resolveDelayFnOptions(a, b, c, 0);
 
-  const msRaw = durationFirst ? parseDuration(durationOrFn) : 0;
-  const ms = Math.max(0, msRaw);
+    const ms = Math.max(0, delay);
+    const signal = options?.signal;
 
-  const fn = durationFirst ? callbackFnOrOptions : durationOrFn;
+    let rafId = 0;
 
-  const opts = durationFirst ? (options ?? {}) : (callbackFnOrOptions ?? {});
-  const signal = opts?.signal;
+    /** @type {any[] | null} */
+    let lastArgs = null;
+    /** @type {any | null} */
+    let lastThis = null;
 
-  if (typeof fn !== 'function') {
-    throw new TypeError(`Expected a function, got: ${typeof fn}`);
-  }
+    // last time the debounced function was called (used for inactivity measurement)
+    let lastCallTime = 0;
 
-  let rafId = 0;
+    const clearRaf = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+    };
 
-  /** @type {any[] | null} */
-  let lastArgs = null;
-  /** @type {any | null} */
-  let lastThis = null;
+    const abort = pendingAbort(signal, () => cancel());
 
-  // last time the debounced function was called (used for inactivity measurement)
-  let lastCallTime = 0;
+    const cancel = () => {
+        clearRaf();
+        lastArgs = null;
+        lastThis = null;
+        lastCallTime = 0;
+        abort.remove();
+    };
 
-  const clearRaf = () => {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = 0;
-  };
+    const invoke = () => {
+        if (!lastArgs) return;
 
-  const cancel = () => {
-    clearRaf();
-    lastArgs = null;
-    lastThis = null;
-    lastCallTime = 0;
-    abort.remove();
-  };
+        const args = lastArgs;
+        const ctx = lastThis;
 
-  const abort = pendingAbort(signal, () => cancel());
+        // Clear first (re-entrancy safe + GC friendly)
+        lastArgs = null;
+        lastThis = null;
 
-  const invoke = () => {
-    if (!lastArgs) return;
+        abort.remove();
+        fn.apply(ctx, args);
+    };
 
-    const args = lastArgs;
-    const ctx = lastThis;
+    const tick = (ts) => {
+        if (!rafId) return; // canceled
 
-    // Clear first (re-entrancy safe + GC friendly)
-    lastArgs = null;
-    lastThis = null;
+        if (!lastArgs) {
+            // Nothing pending; clean slate
+            cancel();
+            return;
+        }
 
-    abort.remove();
-    fn.apply(ctx, args);
-  };
+        const elapsed = ts - lastCallTime;
 
-  const tick = (ts) => {
-    if (!rafId) return; // canceled
-    if (!lastArgs) {
-      // Nothing pending; clean slate
-      cancel();
-      return;
-    }
+        if (elapsed >= ms) {
+            // Stop scheduling first, then invoke
+            clearRaf();
+            invoke();
+            return;
+        }
 
-    const elapsed = ts - lastCallTime;
+        rafId = requestAnimationFrame(tick);
+    };
 
-    if (elapsed >= ms) {
-      // Stop scheduling first, then invoke
-      clearRaf();
-      invoke();
-      return;
-    }
+    /** @type {any} */
+    const debounced = function (...args) {
+        if (signal?.aborted) return;
 
-    rafId = requestAnimationFrame(tick);
-  };
+        lastArgs = args;
+        lastThis = this;
 
-  /** @type {any} */
-  const debounced = function (...args) {
-    if (signal?.aborted) return;
+        // Use monotonic clock for call timestamp; RAF tick uses its own timestamp.
+        lastCallTime = now();
 
-    lastArgs = args;
-    lastThis = this;
+        // Ensure abort listener exists only while pending work exists
+        abort.add();
 
-    // Use perf.now for call timestamp; RAF tick uses its own timestamp,
-    // both are monotonic in modern browsers.
-    lastCallTime = now();
+        clearRaf();
+        rafId = requestAnimationFrame(tick);
+    };
 
-    // Ensure abort listener exists only while pending work exists
-    abort.add();
+    debounced.cancel = cancel;
 
-    clearRaf();
-    rafId = requestAnimationFrame(tick);
-  };
+    debounced.flush = () => {
+        if (!rafId || !lastArgs) return;
+        clearRaf();
+        invoke();
+    };
 
-  debounced.cancel = cancel;
+    // If already aborted at creation time, ensure clean slate.
+    if (signal?.aborted) cancel();
 
-  debounced.flush = () => {
-    if (!rafId || !lastArgs) return;
-    clearRaf();
-    invoke();
-  };
-
-  // If already aborted at creation time, ensure clean slate.
-  if (signal?.aborted) cancel();
-
-  return debounced;
+    return debounced;
 }

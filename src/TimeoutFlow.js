@@ -176,18 +176,22 @@ export function flow({ signal } = {}) {
 
         if (step.type === 'after') {
             step.controller = after(
-                step.duration,
                 () => safeCall(step.fn, step),
-                () => incrementStep(step)
+                step.duration,
+                { signal, onFinish: () => incrementStep(step) }
             );
             return;
         }
 
         if (step.type === 'every') {
-            let count = 0;
 
+            // No ticks will ever fire => advance immediately.
+            if (!(step.times > 0) && step.times !== Infinity) {
+                return incrementStep(step);
+            }
+
+            let count = 0;
             const ctrl = every(
-                step.duration,
                 () => {
                     if (isPaused || isCancelled || isFinished) return;
                     if (signal?.aborted) {
@@ -214,7 +218,8 @@ export function flow({ signal } = {}) {
                         return incrementStep(step);
                     }
                 },
-                step.times
+                step.duration,
+                { max: step.times, signal }
             );
 
             step.controller = ctrl;
@@ -227,7 +232,15 @@ export function flow({ signal } = {}) {
             return runner;
         },
 
-        every(duration, fn, times = Infinity) {
+        every(duration, fn, timesOrOptions = Infinity) {
+            const raw =
+                typeof timesOrOptions === 'number'
+                    ? timesOrOptions
+                    : timesOrOptions?.max ?? Infinity;
+
+            const times =
+                raw === Infinity ? Infinity : Math.max(0, raw | 0); // int >= 0
+
             steps.push({
                 type: 'every',
                 duration,
@@ -237,6 +250,7 @@ export function flow({ signal } = {}) {
                 doWhileCondition,
                 controller: null,
             });
+
             whileCondition = null;
             doWhileCondition = null;
             return runner;

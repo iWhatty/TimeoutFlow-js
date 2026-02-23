@@ -16,22 +16,24 @@ import { now } from './now.js'
  * Creates a throttled version of a function.
  * Executes immediately, throttles further calls, optional trailing execution.
  *
+ * Preferred:
+ * - throttle(fn, delay, [options])
+ *
+ * Also supported:
+ * - throttle(delay, fn, [options])            // legacy/alt ordering
+ *
  * Notes:
- * - Uses performance.now() for elapsed timing.
+ * - Uses performance.now() (via `now()`) for elapsed timing.
  * - If trailing is enabled, uses the latest arguments/context seen during the wait.
  * - `.cancel()` clears any pending trailing invocation.
  * - `.flush()` immediately invokes a pending trailing call (if scheduled).
  * - Optional AbortSignal: abort cancels any pending trailing invocation.
  *
- * Supported forms:
- * - throttle(fn, delay, [options])
- * - throttle(delay, fn, [options])
- *
- * @param {Function|string|number} a - Function or delay
- * @param {Function|string|number|Object} b - Delay, function, or options (only when delay defaults are used)
- * @param {Object} [c] - options
- * @param {boolean} [c.trailing=true] - If true, fire once at trailing edge
- * @param {AbortSignal} [c.signal] - Optional AbortSignal to auto-cancel
+ * @param {Function|string|number} a
+ * @param {Function|string|number|Object} b
+ * @param {Object} [c]
+ * @param {boolean} [c.trailing=true]
+ * @param {AbortSignal} [c.signal]
  * @returns {ThrottledFunction}
  */
 export function throttle(a, b, c) {

@@ -1,5 +1,6 @@
-export { afterRaf } from "./afterRaf.js";
-export { everyRaf } from "./everyRaf.js";
-export { debounceRaf } from "./debounceRaf.js";
-export { throttleRaf } from "./throttleRaf.js";
-export { waitForRaf } from "./waitForRaf.js";
+export function assertRafAvailable(): void;
+export function afterRaf(...args: any[]): any;
+export function everyRaf(...args: any[]): any;
+export function debounceRaf(...args: any[]): any;
+export function throttleRaf(...args: any[]): any;
+export function waitForRaf(...args: any[]): any;

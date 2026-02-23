@@ -7,7 +7,7 @@
 
 **Fluent, human-readable time control for JavaScript.**
 
-TimeoutFlow makes working with time-based logic intuitive — think of it as a modern, composable upgrade to `setTimeout` and `setInterval`, with added powers like chaining, conditional logic, pause/resume control, retries, RAF utilities, and more.
+TimeoutFlow makes working with time-based logic intuitive — think of it as a modern, composable upgrade to `setTimeout` and `setInterval`, with chaining, conditional logic, pause/resume control, retries, RAF utilities, and more.
 
 * Minified: ~6–7 KB
 * Gzipped: ~2–3 KB
@@ -16,41 +16,53 @@ TimeoutFlow makes working with time-based logic intuitive — think of it as a m
 
 ---
 
-## Philosophy
+# Philosophy
 
-TimeoutFlow is not just a wrapper for `setTimeout`.
-It’s a composable mini-framework for expressing time as fluent logic.
+TimeoutFlow is not just a wrapper around timers.
+It’s a composable toolkit for expressing time as readable logic.
 
-We believe temporal behavior in JavaScript should be:
+Temporal behavior should be:
 
 * **Readable** — durations like `"1s"` and `"500ms"` beat magic numbers.
-* **Composable** — sequencing should be declarative, not nested callbacks.
-* **Controllable** — any timer should be pauseable, resumable, cancelable.
+* **Composable** — sequencing should be declarative.
+* **Controllable** — timers should pause, resume, cancel.
 * **Branchable** — real flows need `if`, `while`, `label`, `jumpTo()`.
-* **Tiny** — no reactivity engine, no bloat.
-
-TimeoutFlow gives you atomic time primitives (`after`, `every`, `debounce`, `throttle`, `retry`) and a fluent builder (`flow()`) to script rich behavior over time — like a timeline you control.
+* **Tiny** — no runtime bloat.
 
 > Think of TimeoutFlow as `setTimeout()` with superpowers.
 
 ---
 
-## Timing Semantics
+# Clean Signatures
 
-All pauseable timers in TimeoutFlow are **pause-safe**:
+TimeoutFlow supports **both** natural-language ordering and function-first ordering.
 
-* **Paused time does not count** toward elapsed time.
-* `pause()` freezes the remaining time.
-* `resume()` continues from where it left off.
+You can write:
 
-RAF utilities are frame-driven:
+```js
+after('1s', done);
+```
 
-* `afterRaf('0ms')` runs on the **next animation frame**
-* `everyRaf('0ms')` runs **at most once per frame**
+Or:
+
+```js
+after(done, '1s');
+```
+
+Both are valid.
+
+This applies to:
+
+* `after()`
+* `every()`
+* `debounce()`
+* `throttle()`
+
+Use whichever reads best in your codebase.
 
 ---
 
-## Installation
+# Installation
 
 ```bash
 npm install timeout-flow
@@ -58,99 +70,127 @@ npm install timeout-flow
 
 ---
 
-## Unified Control Surface
+# Unified Control Surface
 
 Most time-based primitives return a **controller object**:
 
 ```js
 import { after } from 'timeout-flow';
 
-const ctrl = after('1s', () => console.log('done'));
+function done() {
+  console.log('done');
+}
+
+const ctrl = after('1s', done);
 
 ctrl.pause();
 ctrl.resume();
 ctrl.cancel();
-ctrl.reset?.(); // some controllers support reset
+ctrl.reset?.();
 
-console.log(ctrl.isRunning);   // boolean
-console.log(ctrl.isPaused);    // boolean
-console.log(ctrl.isFinished);  // boolean
+console.log(ctrl.isRunning);
+console.log(ctrl.isPaused);
+console.log(ctrl.isFinished);
 ```
 
-This controller shape is shared by:
+Shared by:
 
-* `after()` → `pause / resume / cancel / reset`
-* `every()` → `pause / resume / cancel / reset` + `count`
-* `afterRaf()` → `pause / resume / cancel / reset`
-* `everyRaf()` → `pause / resume / cancel / reset` + `count`
+* `after()`
+* `every()`
+* `afterRaf()`
+* `everyRaf()`
 
 All controllers are:
 
 * Pause-safe (paused time does not count)
 * Cancel-safe
-* Monotonic-time based (`performance.now()` / RAF timestamps)
+* Monotonic-time based
 * AbortSignal-aware (where supported)
 
 ---
 
-## Core Features
+# Core Primitives
 
-* `after("1s", fn)` — delay execution once
-* `every("500ms", fn, count?)` — repeat execution with optional limit
-* `flow()` — create fluent, chainable timelines
-* `debounce()` / `throttle()` — time-based input control
-* `retry()` — resilient async retries
-* `waitFor()` — await condition changes
+## after()
 
----
-
-## Usage Examples
-
-### Delayed Execution
+Run once after a delay.
 
 ```js
 import { after } from 'timeout-flow';
 
-after('2s', () => console.log('Waited 2 seconds...'));
+function greet() {
+  console.log('Hello');
+}
+
+after('2s', greet);
 ```
 
-### Repeating with Pause & Resume
+---
+
+## every()
+
+Repeat execution with optional limit.
 
 ```js
-import { every, after as wait } from 'timeout-flow';
+import { every } from 'timeout-flow';
 
-const ticker = every('1s', i => console.log(`Tick ${i}`), 5);
-wait('2.5s', () => ticker.pause());
-wait('4s', () => ticker.resume());
+function tick(i) {
+  console.log('Tick', i);
+}
+
+const ticker = every('1s', tick, { max: 5 });
 ```
 
-### Debounced Input
+---
+
+## debounce()
+
+Delay execution until inactivity.
 
 ```js
 import { debounce } from 'timeout-flow';
 
-const search = debounce('300ms', (e) => {
-  console.log('Searching for:', e.target.value);
-});
+function search(event) {
+  console.log('Searching for:', event.target.value);
+}
 
-search.cancel();
-search.flush();
+const debouncedSearch = debounce('300ms', search);
+
+debouncedSearch.cancel();
+debouncedSearch.flush();
 ```
 
-### Throttle
+---
+
+## throttle()
+
+Limit execution frequency.
 
 ```js
 import { throttle } from 'timeout-flow';
 
+function handleScroll() {
+  console.log('scroll');
+}
+
 const onScroll = throttle('250ms', handleScroll);
+
 onScroll.cancel();
 onScroll.flush();
 ```
 
-### Retry with Backoff + Jitter
+---
+
+## retry()
+
+Retry async operations with backoff + jitter.
 
 ```js
 import { retry } from 'timeout-flow';
+
+async function fetchData() {
+  return fetch('/api/data');
+}
 
 await retry(fetchData, {
   attempts: 5,
@@ -158,150 +198,106 @@ await retry(fetchData, {
   backoff: true,
   factor: 2,
   maxDelay: '5s',
-
-  // jitter: false | true | 'full' | 'equal' | 'decorrelated'
-  jitter: 'decorrelated',
-
-  onRetry: (err, attempt, delayMs) => {
-    console.log(`Retry ${attempt} in ${delayMs}ms`);
-  },
-  shouldRetry: (err) => err.status !== 404,
+  jitter: 'decorrelated'
 });
 ```
 
-### Wait for Condition
+---
+
+## waitFor()
+
+Wait until a condition becomes true.
 
 ```js
 import { waitFor } from 'timeout-flow';
 
-await waitFor(() => document.querySelector('#loaded'), {
+await waitFor(function checkLoaded() {
+  return document.querySelector('#loaded');
+}, {
   interval: '250ms',
   timeout: '5s',
-  immediate: true,
+  immediate: true
 });
 ```
 
 ---
 
-## Fluent Timeline
+# Fluent Timeline
+
+Build declarative time flows.
 
 ```js
 import { flow } from 'timeout-flow';
 
+function stepOne() {
+  console.log('Step 1');
+}
+
+function tick(i) {
+  console.log('Tick', i);
+}
+
+function finalStep() {
+  console.log('Final Step');
+}
+
 flow()
-  .after('1s', () => console.log('Step 1'))
-  .every('500ms', i => console.log(`Tick ${i}`), 3)
-  .after('1s', () => console.log('Final Step'))
+  .after('1s', stepOne)
+  .every('500ms', tick, { max: 3 })
+  .after('1s', finalStep)
   .start();
 ```
 
-### Conditional & Labeled Logic
-
-```js
-flow()
-  .after('1s', () => console.log('Boot sequence'))
-  .if(() => true)
-  .after('500ms', () => console.log('Conditional step'))
-  .label('loop')
-  .every('1s', i => console.log(`Frame ${i}`), 3)
-  .jumpTo('loop')
-  .start();
-```
+Flow reads like a timeline and keeps duration-first ordering for readability.
 
 ---
 
-## AbortSignal Support
+# AbortSignal Support
 
 Many utilities accept `{ signal }` for automatic cancellation.
 
 ```js
-import { afterRaf } from 'timeout-flow';
+import { after } from 'timeout-flow';
 
 const ac = new AbortController();
 
-const ctrl = afterRaf(
-  '2s',
-  () => {
-    console.log('Will not run if aborted');
-  },
-  null,
-  { signal: ac.signal }
-);
+function doWork() {
+  console.log('Will not run if aborted');
+}
 
-ac.abort(); // cancels pending work
+after('2s', doWork, { signal: ac.signal });
+
+ac.abort();
 ```
 
-If the signal is already aborted when created, no work is scheduled.
+If already aborted at creation time, no work is scheduled.
 
 ---
 
-# Frame-Based Timing (RAF Utilities)
+# RAF Utilities
 
-RAF helpers use `requestAnimationFrame` for frame-driven logic.
+Frame-based timing powered by `requestAnimationFrame`.
 
-Ideal for:
+Ideal for visual updates, scroll handlers, layout checks, and animation loops.
 
-* Scroll / pointer handlers
-* Layout checks
-* Visual state polling
-* Canvas / animation loops
+## Available
 
-RAF utilities are frame-driven and typically throttle heavily in background tabs.
+* `afterRaf()`
+* `everyRaf()`
+* `debounceRaf()`
+* `throttleRaf()`
+* `waitForRaf()`
 
-## API Summary
-
-| Function        | Purpose                                  |
-| --------------- | ---------------------------------------- |
-| `afterRaf()`    | Run once after N ms (frame-based)        |
-| `everyRaf()`    | Repeat every N ms using frames           |
-| `debounceRaf()` | Frame-aware debounce (ms inactivity)     |
-| `throttleRaf()` | At most once per frame (or per N frames) |
-| `waitForRaf()`  | Wait for truthy condition via frames     |
-
-## Controls
-
-* `afterRaf()` → `pause()` / `resume()` / `cancel()` / `reset()` + state flags
-* `everyRaf()` → `pause()` / `resume()` / `cancel()` / `reset(restart?)` + state flags + `count`
-* `debounceRaf()` → `.cancel()` + `.flush()`
-* `throttleRaf()` → `.cancel()` + `.flush()`
-* `waitForRaf()` → `{ timeout, signal, immediate }`
-
-## Signatures
-
-```js
-afterRaf(duration, fn, onFinish?, { signal }?)
-everyRaf(duration, fn, maxTimes?, runImmediately?, { signal }?)
-
-debounceRaf(fn, { signal }?)
-debounceRaf(duration, fn, { signal }?)
-
-throttleRaf(fn, frameSkip?)
-throttleRaf(fn, { signal, trailing }?)
-throttleRaf(fn, frameSkip, { signal, trailing }?)
-
-waitForRaf(condition, { timeout, signal, immediate }?)
-```
-
-## Timing Notes
-
-* Paused time does **not** count for `afterRaf()` / `everyRaf()`.
-* `afterRaf('0ms')` runs on the **next frame**.
-* `everyRaf('0ms')` runs **once per frame** (max).
-* `waitForRaf()` timeout is measured using **RAF timestamps** (monotonic).
-
-### Example
+## Example
 
 ```js
 import { throttleRaf } from 'timeout-flow';
 
-// Once per frame:
+function drawFrame() {
+  console.log('draw');
+}
+
 const onScroll = throttleRaf(drawFrame);
-
-// Every 3rd frame (frameSkip = 2):
-const onScrollLite = throttleRaf(drawFrame, 2);
-
-// Keep first args during wait:
-const onDrag = throttleRaf(handleDrag, { trailing: false });
 
 onScroll.cancel();
 onScroll.flush();
@@ -309,7 +305,7 @@ onScroll.flush();
 
 ---
 
-## Public API
+# Public API
 
 ```js
 import {
@@ -321,17 +317,16 @@ import {
   waitFor,
   flow,
 
-  // RAF
   afterRaf,
   everyRaf,
   debounceRaf,
   throttleRaf,
-  waitForRaf,
+  waitForRaf
 } from 'timeout-flow';
 ```
 
 ---
 
-## License
+# License
 
 --{DR.WATT v3.0}--

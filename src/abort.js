@@ -1,7 +1,32 @@
 // ./src/abort.js
 
-c
 
+
+
+/**
+ * Standardized AbortError factory.
+ * Works in browsers and Node runtimes that may not have DOMException.
+ *
+ * We resolve the best implementation once at module load time.
+ * This avoids feature detection in the hot path.
+ */
+
+let createAbortError;
+
+// Prefer native DOMException when available (browser + modern Node).
+if (typeof DOMException !== 'undefined') {
+    createAbortError = (message = 'Aborted') =>
+        new DOMException(message, 'AbortError');
+} else {
+    // Fallback for runtimes without DOMException.
+    createAbortError = (message = 'Aborted') => {
+        const err = new Error(message);
+        err.name = 'AbortError';
+        return err;
+    };
+}
+
+export { createAbortError };
 /**
  * Attach an AbortSignal listener and return a cleanup function.
  * - If `signal` is missing, returns a no-op cleanup.

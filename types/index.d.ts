@@ -6,4 +6,4 @@ export { after } from "./after.js";
 export { every } from "./every.js";
 export { waitFor } from "./waitFor.js";
 export { retry } from "./retry.js";
-export * from "./raf/index.js";
+export { afterRaf, everyRaf, debounceRaf, throttleRaf, waitForRaf } from "./raf/index.js";

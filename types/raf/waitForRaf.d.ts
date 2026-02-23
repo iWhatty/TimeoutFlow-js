@@ -1,13 +1,19 @@
 /**
  * Waits for a condition to return truthy, polling each frame.
- * - Ideal for visual state: DOM settling, visibility, layout changes.
- * - Respects tab inactivity (pause-safe).
+ *
+ * Timing model:
+ * - Evaluates `condition()` once per animation frame until it returns truthy.
+ * - If `timeout` is provided, timeout is measured in RAF time (frame timestamps).
  *
  * @param {Function} condition - Function returning truthy when complete
  * @param {Object} [options]
  * @param {string|number} [options.timeout] - Optional max time to wait
- * @returns {Promise<void>} Resolves when condition is met, rejects on timeout
+ * @param {AbortSignal} [options.signal] - Optional AbortSignal to cancel waiting
+ * @param {boolean} [options.immediate=false] - If true, evaluate condition immediately before first frame
+ * @returns {Promise<void>} Resolves when condition is met, rejects on timeout/abort
  */
-export function waitForRaf(condition: Function, { timeout }?: {
+export function waitForRaf(condition: Function, { timeout, signal, immediate }?: {
     timeout?: string | number | undefined;
+    signal?: AbortSignal | undefined;
+    immediate?: boolean | undefined;
 }): Promise<void>;

@@ -1,9 +1,16 @@
 // ./raf/throttleRaf.js
-
 import { pendingAbort } from '../abort.js';
+
+const isPlainOptions = (v) => v != null && typeof v === 'object' && !Array.isArray(v);
 
 /**
  * Throttles a function using `requestAnimationFrame`, with optional frame skipping.
+ *
+ * Preferred:
+ * - throttleRaf(fn, [frameSkip], [options])
+ *
+ * Also supported:
+ * - throttleRaf(fn, [options])               // frameSkip defaults to 0
  *
  * Executes at most once every `(frameSkip + 1)` frames.
  *
@@ -16,13 +23,10 @@ import { pendingAbort } from '../abort.js';
  * - Listener is attached only while a call is pending.
  *
  * @template {(...args: any[]) => any} T
- * @param {T} fn - Function to throttle.
+ * @param {T} fn
  * @param {number|{signal?: AbortSignal, trailing?: boolean}} [frameSkipOrOptions=0]
  * @param {{signal?: AbortSignal, trailing?: boolean}} [maybeOptions]
- * @returns {T & {
- *   cancel: () => void,
- *   flush: () => void
- * }}
+ * @returns {T & { cancel: () => void, flush: () => void }}
  */
 export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
   if (typeof fn !== 'function') {
@@ -31,13 +35,14 @@ export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
 
   const frameSkip = typeof frameSkipOrOptions === 'number' ? frameSkipOrOptions : 0;
 
-  const options =
-    typeof frameSkipOrOptions === 'object' && frameSkipOrOptions != null
-      ? frameSkipOrOptions
-      : maybeOptions ?? {};
+  const options = isPlainOptions(frameSkipOrOptions)
+    ? frameSkipOrOptions
+    : isPlainOptions(maybeOptions)
+      ? maybeOptions
+      : {};
 
-  const signal = options?.signal;
-  const trailing = options?.trailing ?? true;
+  const signal = options.signal;
+  const trailing = options.trailing ?? true;
 
   // Normalize once: int >= 0
   const skip = Math.max(0, frameSkip | 0);
@@ -52,6 +57,8 @@ export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
 
   // countdown for skip-path only
   let remaining = skip;
+
+  const abort = pendingAbort(signal, () => cancel());
 
   const clearState = () => {
     scheduled = false;
@@ -71,10 +78,7 @@ export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
     clearState();
   };
 
-  const abort = pendingAbort(signal, () => cancel());
-
   const invoke = () => {
-    // if canceled, lastArgs is null
     if (!lastArgs) return;
 
     const args = lastArgs;
@@ -96,7 +100,6 @@ export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
   };
 
   const tickSkip = () => {
-    // scheduled might have been canceled since RAF was queued
     if (!scheduled) return;
 
     if (signal?.aborted) {
@@ -157,6 +160,7 @@ export function throttleRaf(fn, frameSkipOrOptions = 0, maybeOptions) {
 
   throttled.flush = () => {
     if (!scheduled) return;
+
     if (signal?.aborted) {
       cancel();
       return;

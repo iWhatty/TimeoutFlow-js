@@ -1,11 +1,41 @@
 /**
- * Repeats a function every N milliseconds using requestAnimationFrame
- * (instead of setTimeout/setInterval).
+ * Repeats a function every N milliseconds using requestAnimationFrame.
  *
- * @param {string|number} duration - Interval duration ("1s", "500ms", 500, etc.)
- * @param {Function} fn - Function to run
- * @param {number} [maxTimes=Infinity] - Max number of executions
- * @param {boolean} [runImmediately=false] - Whether to run immediately
- * @returns {Object} - Control methods and flags
+ * Preferred:
+ * - everyRaf(fn, duration, [options])
+ *
+ * Also supported (legacy):
+ * - everyRaf(duration, fn, [maxTimes], [runImmediately], [options])
+ *
+ * Timing model:
+ * - Counts down using frame deltas.
+ * - Paused time does NOT count (pause freezes remaining-to-next-tick).
+ * - On large frame gaps, may "catch up" by running multiple ticks in one frame,
+ *   but will never exceed max.
+ *
+ * @param {Function|string|number} a
+ * @param {Function|string|number|Object} b
+ * @param {number|boolean|Object} [c] - legacy maxTimes OR legacy runImmediately OR options
+ * @param {boolean|Object} [d] - legacy runImmediately OR options
+ * @param {Object} [e] - legacy options
+ * @returns {{
+ *   pause(): void,
+ *   resume(): void,
+ *   cancel(): void,
+ *   reset(restart?: boolean): void,
+ *   readonly isRunning: boolean,
+ *   readonly isPaused: boolean,
+ *   readonly isFinished: boolean,
+ *   readonly count: number
+ * }}
  */
-export function everyRaf(duration: string | number, fn: Function, maxTimes?: number, runImmediately?: boolean): Object;
+export function everyRaf(a: Function | string | number, b: Function | string | number | Object, c?: number | boolean | Object, d?: boolean | Object, e?: Object): {
+    pause(): void;
+    resume(): void;
+    cancel(): void;
+    reset(restart?: boolean): void;
+    readonly isRunning: boolean;
+    readonly isPaused: boolean;
+    readonly isFinished: boolean;
+    readonly count: number;
+};
