@@ -1,7 +1,9 @@
 // ./src/waitFor.js
 
 import { parseDuration } from './parseDuration.js';
-import { attachAbort } from './abort.js';
+import { attachAbort, createAbortError } from './abort.js';
+import { now } from './now.js'
+
 
 /**
  * Waits for a condition to become true, polling at intervals.
@@ -14,17 +16,14 @@ import { attachAbort } from './abort.js';
  * @param {AbortSignal} [options.signal] - Optional AbortSignal to cancel waiting
  * @returns {Promise<void>}
  */
-export function waitFor(
-  condition,
-  { interval = '250ms', timeout, immediate = false, signal } = {}
-) {
+export function waitFor(condition, { interval = '250ms', timeout, immediate = false, signal } = {}) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      reject(new DOMException('Aborted', 'AbortError'));
+      reject(createAbortError());
       return;
     }
 
-    const start = performance.now();
+    const start = now();
 
     const intervalMs = typeof interval === 'string' ? parseDuration(interval) : interval;
     const timeoutMs = timeout != null ? parseDuration(timeout) : null;
@@ -41,7 +40,7 @@ export function waitFor(
 
     const onAbort = () => {
       cleanup();
-      reject(new DOMException('Aborted', 'AbortError'));
+      reject(createAbortError());
     };
 
     const cleanupAbort = attachAbort(signal, onAbort);
@@ -63,7 +62,7 @@ export function waitFor(
         return;
       }
 
-      if (timeoutMs != null && performance.now() - start >= timeoutMs) {
+      if (timeoutMs != null && now() - start >= timeoutMs) {
         cleanup();
         reject(new Error('waitFor timed out'));
       }

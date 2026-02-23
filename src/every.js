@@ -2,6 +2,7 @@
 import { parseDuration } from './parseDuration.js';
 import { EveryTimer } from './EveryTimer.js';
 import { attachAbort } from './abort.js';
+import { now } from './now.js'
 
 /**
  * Runs a function every N ms with optional execution limit.
@@ -94,7 +95,7 @@ export function _every(duration, fn, maxTimes = Infinity, runImmediately = false
     }
 
     const scheduleNext = (delay = ms) => {
-        startTime = performance.now();
+        startTime = now();
         remaining = delay;
 
         running = true;
@@ -128,7 +129,7 @@ export function _every(duration, fn, maxTimes = Infinity, runImmediately = false
 
         cancelTimeout();
 
-        const elapsed = performance.now() - startTime;
+        const elapsed = now() - startTime;
         remaining = Math.max(0, remaining - elapsed);
 
         running = false;

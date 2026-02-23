@@ -2,6 +2,7 @@
 import { parseDuration } from './parseDuration.js';
 import { AfterTimer } from './AfterTimer.js';
 import { attachAbort } from './abort.js';
+import { now } from './now.js'
 
 /**
  * Schedules a one-time delayed function.
@@ -82,7 +83,7 @@ export function _after(duration, fn, onFinish, { signal } = {}) {
   }
 
   const schedule = () => {
-    startTime = performance.now();
+    startTime = now();
     running = true;
     paused = false;
 
@@ -103,7 +104,7 @@ export function _after(duration, fn, onFinish, { signal } = {}) {
 
     cancelTimeout();
 
-    const elapsed = performance.now() - startTime;
+    const elapsed = now() - startTime;
     remaining = Math.max(0, remaining - elapsed);
 
     running = false;

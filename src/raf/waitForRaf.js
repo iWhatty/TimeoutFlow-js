@@ -1,6 +1,6 @@
 // ./raf/waitForRaf.js
 import { parseDuration } from '../parseDuration.js';
-import { attachAbort } from '../abort.js';
+import { attachAbort, createAbortError } from '../abort.js';
 
 /**
  * Waits for a condition to return truthy, polling each frame.
@@ -24,7 +24,7 @@ export function waitForRaf(condition, { timeout, signal, immediate = false } = {
     }
 
     if (signal?.aborted) {
-      reject(new DOMException('Aborted', 'AbortError'));
+      reject(createAbortError());
       return;
     }
 
@@ -41,7 +41,7 @@ export function waitForRaf(condition, { timeout, signal, immediate = false } = {
 
     const onAbort = () => {
       cleanup();
-      reject(new DOMException('Aborted', 'AbortError'));
+      reject(createAbortError());
     };
 
     const cleanupAbort = attachAbort(signal, onAbort);

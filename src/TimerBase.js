@@ -1,5 +1,7 @@
 // ./src/TimerBase.js
 import { parseDuration } from './parseDuration.js';
+import { now } from './now.js'
+
 
 /**
  * Base timer class to manage pause/resume/cancel behavior.
@@ -56,7 +58,7 @@ export class TimerBase {
     clearTimeout(this.#timer);
     this.#timer = null;
 
-    const elapsed = performance.now() - this.#startTime;
+    const elapsed = now() - this.#startTime;
     this.#remaining = Math.max(0, this.#remaining - elapsed);
 
     this.#running = false;
@@ -85,7 +87,7 @@ export class TimerBase {
     // otherwise pause() math will be wrong when overrideDelay is used.
     this.#remaining = delay;
 
-    this.#startTime = performance.now();
+    this.#startTime = now();
     this.#running = true;
     this.#paused = false;
 

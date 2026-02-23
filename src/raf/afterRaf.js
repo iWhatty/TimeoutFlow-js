@@ -1,6 +1,7 @@
 // ./raf/afterRaf.js
 import { parseDuration } from '../parseDuration.js';
 import { attachAbort } from '../abort.js';
+import { now } from '../now.js'
 
 /**
  * Schedules a one-time delayed function using requestAnimationFrame.
@@ -89,9 +90,9 @@ export function afterRaf(duration, fn, onFinish, { signal } = {}) {
     cancelFrame();
 
     // Freeze remaining based on how long we ran in this segment
-    const now = performance.now();
+    const now = now();
     if (segmentStart != null) {
-      const elapsed = now - segmentStart;
+      const elapsed = now() - segmentStart;
       remaining = Math.max(0, remaining - elapsed);
     }
 

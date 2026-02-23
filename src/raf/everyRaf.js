@@ -1,6 +1,7 @@
 // ./raf/everyRaf.js
 import { parseDuration } from '../parseDuration.js';
 import { attachAbort } from '../abort.js';
+import { now } from '../now.js'
 
 /**
  * Repeats a function every N milliseconds using requestAnimationFrame.
@@ -164,7 +165,7 @@ export function everyRaf(
         cancelFrame();
 
         // Freeze remainingToNext based on time since lastTs
-        const now = performance.now();
+        const now = now();
         if (lastTs != null) {
             const delta = now - lastTs;
             remainingToNext = Math.max(0, remainingToNext - delta);

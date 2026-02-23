@@ -1,6 +1,7 @@
 // ./raf/debounceRaf.js
 import { parseDuration } from '../parseDuration.js';
 import { pendingAbort } from '../abort.js';
+import { now } from '../now.js'
 
 /**
  * Debounces a function using requestAnimationFrame.
@@ -107,7 +108,7 @@ export function debounceRaf(durationOrFn, callbackFnOrOptions, options) {
 
     // Use perf.now for call timestamp; RAF tick uses its own timestamp,
     // both are monotonic in modern browsers.
-    lastCallTime = performance.now();
+    lastCallTime = now();
 
     // Ensure abort listener exists only while pending work exists
     abort.add();

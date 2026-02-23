@@ -2,6 +2,8 @@
 
 import { resolveDelayFnOptions } from './resolveDelayAndFn.js';
 import { pendingAbort } from './abort.js';
+import { now } from './now.js'
+
 
 /**
  * @typedef {((...args: any[]) => void) & {
@@ -80,7 +82,7 @@ export function throttle(a, b, c) {
 
     timeoutId = setTimeout(() => {
       timeoutId = 0;
-      lastCallTime = performance.now();
+      lastCallTime = now();
       invoke();
     }, wait);
   };
@@ -89,7 +91,7 @@ export function throttle(a, b, c) {
   const throttled = function (...args) {
     if (signal?.aborted) return;
 
-    const now = performance.now();
+    const now = now();
     const timeSinceLast = now - lastCallTime;
 
     lastArgs = args;
@@ -126,7 +128,7 @@ export function throttle(a, b, c) {
     clearTimeout(timeoutId);
     timeoutId = 0;
 
-    lastCallTime = performance.now();
+    lastCallTime = now();
     invoke();
   };
 
