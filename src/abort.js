@@ -1,26 +1,6 @@
 // ./src/abort.js
 
-
-/**
- * Standardized AbortError factory.
- * Keeps message/name consistent across environments.
- */
-/**
- * Standardized AbortError factory.
- * Works in browsers and Node runtimes that may not have DOMException.
- */
-export function createAbortError(message = 'Aborted') {
-    // Prefer DOMException when available (browser + modern Node)
-    if (typeof DOMException !== 'undefined') {
-        return new DOMException(message, 'AbortError');
-    }
-
-    // Fallback: Error with AbortError name
-    const err = new Error(message);
-    err.name = 'AbortError';
-    return err;
-}
-
+c
 
 /**
  * Attach an AbortSignal listener and return a cleanup function.

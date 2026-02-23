@@ -13,16 +13,16 @@ export class AfterTimer extends TimerBase {
   #onAbort = null;
 
   /** @type {() => void} */
-  #cleanupAbort = () => {};
+  #cleanupAbort = () => { };
 
   /**
    * @param {string|number} duration - Delay before firing (e.g., '1s', 300)
    * @param {Function} fn - Main function to execute
-   * @param {Function} [onFinish] - Optional callback when done
    * @param {Object} [options]
+   * @param {Function} [options.onFinish] - Optional callback when done
    * @param {AbortSignal} [options.signal] - Optional AbortSignal to auto-cancel
    */
-  constructor(duration, fn, onFinish, { signal } = {}) {
+  constructor(duration, fn, { onFinish, signal } = {}) {
     super(duration);
 
     this.#signal = signal ?? null;
@@ -43,9 +43,9 @@ export class AfterTimer extends TimerBase {
   #attachAbort() {
     if (!this.#signal || !this.#onAbort) return;
 
-    // Avoid re-entrancy hazards: if already aborted, do terminal cancel here.
+    // If already aborted, terminate immediately.
     if (this.#signal.aborted) {
-      super.cancel(); // terminal (TimerBase sets isFinished)
+      super.cancel();
       this.#cleanupAbortListener();
       return;
     }
@@ -54,32 +54,29 @@ export class AfterTimer extends TimerBase {
   }
 
   #cleanupAbortListener() {
-    // Always safe to call (defaults to no-op)
     this.#cleanupAbort();
-    this.#cleanupAbort = () => {};
+    this.#cleanupAbort = () => { };
 
-    // Keep #signal reference so reset() can reattach; only drop handler.
+    // Keep signal reference so reset() can reattach.
     this.#onAbort = null;
   }
 
   cancel() {
     if (this.isFinished) return;
 
-    // remove listener first to avoid keeping instance alive
+    // Remove listener first to avoid keeping instance alive.
     this.#cleanupAbortListener();
 
     super.cancel();
   }
 
   reset() {
-    // Reset should preserve the AbortSignal contract if one was provided.
+    // Preserve AbortSignal semantics.
     this.#cleanupAbort();
-    this.#cleanupAbort = () => {};
+    this.#cleanupAbort = () => { };
     this.#onAbort = () => this.cancel();
 
     super.reset();
     this.#attachAbort();
-
-    // If signal was already aborted, remain terminal (super.cancel in attach)
   }
 }

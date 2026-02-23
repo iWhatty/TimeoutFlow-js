@@ -1,7 +1,7 @@
 // ./src/EveryTimer.js
+import { attachAbort } from './abort.js';
 import { TimerBase } from './TimerBase.js';
 import { parseDuration } from './parseDuration.js';
-import { attachAbort } from './abort.js';
 
 /**
  * Repeatedly runs a function every N ms, with optional max count.
@@ -21,17 +21,17 @@ export class EveryTimer {
   #signal = null;
 
   /** @type {() => void} */
-  #cleanupAbort = () => { };
+  #cleanupAbort = () => {};
 
   /**
    * @param {string|number} duration - Delay between calls (e.g., '1s', 200)
    * @param {Function} fn - Function to call each tick
-   * @param {number} [max=Infinity] - Max executions
-   * @param {boolean} [runImmediately=false] - Run `fn` once before first delay
    * @param {Object} [options]
+   * @param {number} [options.max=Infinity] - Max executions
+   * @param {boolean} [options.runImmediately=false] - Run `fn` once before first delay
    * @param {AbortSignal} [options.signal] - Optional AbortSignal to auto-cancel
    */
-  constructor(duration, fn, max = Infinity, runImmediately = false, { signal } = {}) {
+  constructor(duration, fn, { max = Infinity, runImmediately = false, signal } = {}) {
     this.#interval = parseDuration(duration);
     this.#fn = fn;
     this.#max = max;
@@ -101,7 +101,7 @@ export class EveryTimer {
     this.#finished = true;
 
     this.#cleanupAbort();
-    this.#cleanupAbort = () => { };
+    this.#cleanupAbort = () => {};
     this.#signal = null;
   };
 
@@ -189,7 +189,7 @@ export class EveryTimer {
     if (this.#signal?.aborted) {
       this.#finished = true;
       this.#cleanupAbort();
-      this.#cleanupAbort = () => { };
+      this.#cleanupAbort = () => {};
       this.#signal = null;
       return;
     }
@@ -199,7 +199,7 @@ export class EveryTimer {
       if (!(this.#max > 0) && this.#max !== Infinity) {
         this.#finished = true;
         this.#cleanupAbort();
-        this.#cleanupAbort = () => { };
+        this.#cleanupAbort = () => {};
         this.#signal = null;
         return;
       }

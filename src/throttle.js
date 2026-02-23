@@ -77,6 +77,7 @@ export function throttle(a, b, c) {
     abort.remove();
   };
 
+  /** @param {number} wait */
   const scheduleTrailing = (wait) => {
     abort.add();
 
@@ -91,15 +92,15 @@ export function throttle(a, b, c) {
   const throttled = function (...args) {
     if (signal?.aborted) return;
 
-    const now = now();
-    const timeSinceLast = now - lastCallTime;
+    const currentTime = now();
+    const timeSinceLast = currentTime - lastCallTime;
 
     lastArgs = args;
     lastThis = this;
 
     if (timeSinceLast >= waitWindow) {
       // Leading edge: run now
-      lastCallTime = now;
+      lastCallTime = currentTime;
 
       // Clear any pending trailing call (and listener)
       if (timeoutId) {
