@@ -18,8 +18,8 @@
     "control-flow",
     "utilities"
   ],
-  "author": "DR.WATT",
-  "license": "DR.WATT License v3.0",
+  "author": "WATT3D <WATT3D@protonmail.com>",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iWhatty/TimeoutFlow-js.git"
