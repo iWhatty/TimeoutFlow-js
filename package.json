@@ -19,7 +19,7 @@
     "utilities"
   ],
   "author": "WATT3D <WATT3D@protonmail.com>",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iWhatty/TimeoutFlow-js.git"
@@ -42,7 +42,8 @@
     "dist/",
     "src/",
     "types/",
-    "robots.txt"
+    "robots.txt",
+    "ADDITIONAL_TERMS.md"
   ],
   "types": "./types/index.d.ts",
   "scripts": {
