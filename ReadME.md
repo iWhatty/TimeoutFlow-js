@@ -1,9 +1,10 @@
 # TimeoutFlow
 
 [![npm](https://img.shields.io/npm/v/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
-[![gzip size](https://img.shields.io/bundlephobia/minzip/timeout-flow)](https://bundlephobia.com/package/timeout-flow)
-[![downloads](https://img.shields.io/npm/dw/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
-[![GitHub stars](https://img.shields.io/github/stars/iWhatty/TimeoutFlow-js?style=social)](https://github.com/iWhatty/TimeoutFlow-js)
+[![downloads](https://img.shields.io/npm/dm/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/timeout-flow)](https://bundlephobia.com/package/timeout-flow)
+[![license](https://img.shields.io/npm/l/timeout-flow)](https://github.com/iWhatty/TimeoutFlow-js/blob/main/LICENSE)
+[![stars](https://img.shields.io/github/stars/iWhatty/TimeoutFlow-js?style=social)](https://github.com/iWhatty/TimeoutFlow-js)
 
 **Fluent, human-readable time control for JavaScript.**
 
