@@ -10,10 +10,50 @@
 
 TimeoutFlow makes working with time-based logic intuitive — think of it as a modern, composable upgrade to `setTimeout` and `setInterval`, with chaining, conditional logic, pause/resume control, retries, RAF utilities, and more.
 
-* Minified: ~6–7 KB
-* Gzipped: ~2–3 KB
+* Minified: ~6–7 KB (full kit)
+* Gzipped: ~2–3 KB (full kit)
+* Per-primitive: ~1.2 KB gzipped for a single timer (e.g. just `after()`) thanks to per-file subpath exports added in 0.0.19
 * Zero dependencies
 * ESM-first, tree-shakeable
+
+---
+
+# Tree-shaking & per-primitive imports
+
+Two import styles, same package, choose by bundle-size sensitivity:
+
+```js
+// Full kit — every primitive available on one import.
+// Modern bundlers (esbuild, vite, rollup, webpack 5) will tree-shake
+// unused exports because the package ships `sideEffects: false` and the
+// `.` entrypoint now points at ESM source instead of a pre-minified blob.
+import { after, debounce, retry } from 'timeout-flow';
+```
+
+```js
+// Per-primitive subpath — explicit minimum surface. Useful when you
+// know you only need one primitive and want the bundle to reflect that
+// without relying on the bundler's tree-shaker. Same source either way.
+import { after }     from 'timeout-flow/after';
+import { every }     from 'timeout-flow/every';
+import { debounce }  from 'timeout-flow/debounce';
+import { throttle }  from 'timeout-flow/throttle';
+import { retry }     from 'timeout-flow/retry';
+import { waitFor }   from 'timeout-flow/wait-for';
+import { flow }      from 'timeout-flow/flow';
+import { afterRaf, everyRaf, debounceRaf, throttleRaf, waitForRaf } from 'timeout-flow/raf';
+import { parseDuration } from 'timeout-flow/parse-duration';
+```
+
+Measured for a single `after()` call in a typical browser bundler (esbuild, minified + gzip):
+
+| Import style | Gzip |
+|---|---:|
+| pre-0.0.19 default (full minified bundle) | 5098 bytes |
+| 0.0.19 default (`import { after } from 'timeout-flow'`) | 1199 bytes |
+| 0.0.19 subpath (`import { after } from 'timeout-flow/after'`) | 1199 bytes |
+
+For unbundled `<script type="module">` consumption of the full kit, use the **`timeout-flow/min`** subpath, which points at the pre-built minified IIFE.
 
 ---
 

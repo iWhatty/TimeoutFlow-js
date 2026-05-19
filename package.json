@@ -1,6 +1,6 @@
 {
   "name": "timeout-flow",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "type": "module",
   "description": "Fluent, composable, pauseable JavaScript timers and time control flows — plus RAF utilities for frame-based logic.",
   "keywords": [
@@ -30,13 +30,21 @@
   "browser": "./dist/timeout-flow.min.js",
   "exports": {
     ".": {
-      "browser": {
-        "import": "./dist/timeout-flow.min.js",
-        "require": "./dist/timeout-flow.min.js"
-      },
+      "types": "./types/index.d.ts",
       "import": "./src/index.js",
-      "require": "./dist/timeout-flow.min.js"
-    }
+      "require": "./dist/timeout-flow.min.js",
+      "default": "./src/index.js"
+    },
+    "./after":          "./src/after.js",
+    "./every":          "./src/every.js",
+    "./debounce":       "./src/debounce.js",
+    "./throttle":       "./src/throttle.js",
+    "./retry":          "./src/retry.js",
+    "./wait-for":       "./src/waitFor.js",
+    "./flow":           "./src/TimeoutFlow.js",
+    "./parse-duration": "./src/parseDuration.js",
+    "./raf":            "./src/raf/index.js",
+    "./min":            "./dist/timeout-flow.min.js"
   },
   "files": [
     "dist/",
