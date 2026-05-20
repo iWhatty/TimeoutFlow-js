@@ -22,7 +22,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/iWhatty/TimeoutFlow-js.git"
+    "url": "git+https://github.com/iWhatty/timeout-flow.git"
   },
   "sideEffects": false,
   "main": "./dist/timeout-flow.min.js",
