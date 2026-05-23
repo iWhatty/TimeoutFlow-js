@@ -25,6 +25,9 @@
     "url": "git+https://github.com/iWhatty/timeout-flow.git"
   },
   "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "main": "./dist/timeout-flow.min.js",
   "module": "./src/index.js",
   "browser": "./dist/timeout-flow.min.js",
@@ -47,9 +50,9 @@
     "./min":            "./dist/timeout-flow.min.js"
   },
   "files": [
-    "dist/",
-    "src/",
-    "types/",
+    "dist",
+    "src",
+    "types",
     "robots.txt",
     "ADDITIONAL_TERMS.md"
   ],
