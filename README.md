@@ -3,8 +3,9 @@
 [![npm](https://img.shields.io/npm/v/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
 [![downloads](https://img.shields.io/npm/dm/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/timeout-flow)](https://bundlephobia.com/package/timeout-flow)
-[![license](https://img.shields.io/npm/l/timeout-flow)](https://github.com/iWhatty/TimeoutFlow-js/blob/main/LICENSE)
-[![stars](https://img.shields.io/github/stars/iWhatty/TimeoutFlow-js?style=social)](https://github.com/iWhatty/TimeoutFlow-js)
+[![license](https://img.shields.io/npm/l/timeout-flow)](https://github.com/iWhatty/timeout-flow/blob/main/LICENSE)
+[![stars](https://img.shields.io/github/stars/iWhatty/timeout-flow?style=social)](https://github.com/iWhatty/timeout-flow)
+[![types](https://img.shields.io/npm/types/timeout-flow)](https://www.npmjs.com/package/timeout-flow)
 
 Fluent, human-readable time control for JavaScript. A modern, composable upgrade to `setTimeout` and `setInterval` with chaining, conditional logic, pause/resume control, retries, and RAF utilities.
 
